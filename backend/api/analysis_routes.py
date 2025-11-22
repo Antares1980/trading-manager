@@ -7,9 +7,30 @@ Provides endpoints for calculating technical indicators using the 'ta' library.
 from flask import Blueprint, jsonify, request
 from backend.utils.technical_analysis import calculate_indicators
 import logging
+import json
+import math
 
 analysis_bp = Blueprint('analysis', __name__)
 logger = logging.getLogger(__name__)
+
+
+def safe_jsonify(data):
+    """Convert data to JSON, replacing NaN and inf with None."""
+    def convert_value(obj):
+        if isinstance(obj, float):
+            if math.isnan(obj) or math.isinf(obj):
+                return None
+        return obj
+    
+    def recursive_convert(data):
+        if isinstance(data, dict):
+            return {k: recursive_convert(v) for k, v in data.items()}
+        elif isinstance(data, list):
+            return [recursive_convert(item) for item in data]
+        else:
+            return convert_value(data)
+    
+    return jsonify(recursive_convert(data))
 
 
 @analysis_bp.route('/indicators/<ticker>', methods=['GET'])
@@ -38,7 +59,7 @@ def get_technical_indicators(ticker):
         if result is None:
             return jsonify({'error': f'Could not calculate indicators for {ticker}'}), 500
         
-        return jsonify(result), 200
+        return safe_jsonify(result), 200
         
     except ValueError as e:
         logger.warning(f"Invalid request for {ticker}: {str(e)}")
@@ -91,7 +112,7 @@ def get_analysis_summary(ticker):
             'signals': _generate_signals(latest)
         }
         
-        return jsonify(summary), 200
+        return safe_jsonify(summary), 200
         
     except Exception as e:
         logger.error(f"Error generating summary for {ticker}: {str(e)}")

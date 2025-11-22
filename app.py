@@ -8,16 +8,31 @@ Serves API endpoints for market data and technical analysis.
 
 from flask import Flask
 from flask_cors import CORS
+from flask.json.provider import DefaultJSONProvider
 from backend.api.market_routes import market_bp
 from backend.api.analysis_routes import analysis_bp
 from backend.api.auth_routes import auth_bp
 import os
+import math
+
+
+class CustomJSONProvider(DefaultJSONProvider):
+    """Custom JSON provider that handles NaN and infinity values."""
+    
+    def default(self, obj):
+        if isinstance(obj, float):
+            if math.isnan(obj) or math.isinf(obj):
+                return None
+        return super().default(obj)
 
 def create_app():
     """Application factory for creating Flask app instance."""
     app = Flask(__name__, 
                 static_folder='frontend/static',
                 template_folder='frontend/templates')
+    
+    # Set custom JSON provider
+    app.json = CustomJSONProvider(app)
     
     # Load configuration
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')

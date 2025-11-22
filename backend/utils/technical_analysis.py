@@ -64,9 +64,11 @@ def calculate_indicators(ticker, start_date=None, end_date=None, indicators=None
         # Convert date back to string for JSON serialization
         df['date'] = df['date'].dt.strftime('%Y-%m-%d')
         
-        # Replace NaN with None for JSON serialization
+        # Replace NaN and inf with None for JSON serialization
+        df = df.replace([float('inf'), float('-inf')], None)
         df = df.where(pd.notna(df), None)
         
+        # Convert to dict with proper None handling
         result = {
             'ticker': ticker,
             'data': df.to_dict('records'),

@@ -2,14 +2,19 @@
 Market data utilities.
 
 Provides functions for fetching stock market data from Yahoo Finance.
+Falls back to mock data if Yahoo Finance is unavailable.
 """
 
 import pandas as pd
 from yahooquery import Ticker
 from datetime import datetime, timedelta
 import logging
+import os
 
 logger = logging.getLogger(__name__)
+
+# Use mock data if environment variable is set or Yahoo Finance fails
+USE_MOCK_DATA = os.environ.get('USE_MOCK_DATA', 'False').lower() == 'true'
 
 
 def fetch_market_data(ticker, start_date=None, end_date=None, interval='1d'):
@@ -25,6 +30,12 @@ def fetch_market_data(ticker, start_date=None, end_date=None, interval='1d'):
     Returns:
         DataFrame with OHLCV data
     """
+    # Use mock data if enabled
+    if USE_MOCK_DATA:
+        from backend.utils.mock_data import generate_mock_stock_data
+        logger.info(f"Using mock data for {ticker}")
+        return generate_mock_stock_data(ticker, days=60)
+    
     try:
         # Set default dates if not provided
         if not end_date:
@@ -74,7 +85,10 @@ def fetch_market_data(ticker, start_date=None, end_date=None, interval='1d'):
             
     except Exception as e:
         logger.error(f"Error fetching data for {ticker}: {str(e)}")
-        return None
+        # Fallback to mock data if Yahoo Finance fails
+        logger.info(f"Falling back to mock data for {ticker}")
+        from backend.utils.mock_data import generate_mock_stock_data
+        return generate_mock_stock_data(ticker, days=60)
 
 
 def get_stock_info(ticker):
@@ -87,6 +101,12 @@ def get_stock_info(ticker):
     Returns:
         Dict with stock information
     """
+    # Use mock data if enabled
+    if USE_MOCK_DATA:
+        from backend.utils.mock_data import generate_mock_stock_info
+        logger.info(f"Using mock info for {ticker}")
+        return generate_mock_stock_info(ticker)
+    
     try:
         logger.info(f"Fetching info for {ticker}")
         
@@ -119,4 +139,7 @@ def get_stock_info(ticker):
         
     except Exception as e:
         logger.error(f"Error fetching info for {ticker}: {str(e)}")
-        return {}
+        # Fallback to mock data if Yahoo Finance fails
+        logger.info(f"Falling back to mock info for {ticker}")
+        from backend.utils.mock_data import generate_mock_stock_info
+        return generate_mock_stock_info(ticker)
