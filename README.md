@@ -1,24 +1,45 @@
-# Trading Manager CLI
+# Trading Manager
 
-`trading_manager_cli.py` replaces the previous stock fetcher scripts with a single command-line utility that downloads historical OHLC pricing and optional fundamentals data for any list of tickers.
+A comprehensive trading analysis platform with Flask backend API and interactive web frontend for technical analysis of stocks. Features real-time market data fetching, technical indicator calculations, and beautiful chart visualizations.
 
-## Overview
+## 🚀 Features
 
-- **Pricing data**: daily Open/High/Low/Close plus volume (and dividends/adj close when available).
-- **Current fundamentals** (`--fundamentals`): trailing P/E, EPS, ROE, and dividend yield pulled from Yahoo Finance key stats.
-- **Quarterly fundamentals** (`--quarterly-fundamentals`): every column from `yahooquery`'s quarterly income statement (BasicEPS, TotalRevenue, GrossProfit, NetIncome, etc.) merged onto the daily rows with backward-filling.
-- **Logging**: `--log-level` controls verbosity (`INFO` by default, `DEBUG` surfaces Yahoo-related traffic for troubleshooting).
+### Web Application
+- **Interactive Dashboard**: Modern, responsive web interface for stock analysis
+- **Real-time Charts**: Visualize stock prices with Chart.js integration
+- **Technical Indicators**: RSI, MACD, SMA, EMA, Bollinger Bands, ATR, OBV
+- **Trading Signals**: Automated signal generation based on technical analysis
+- **User Authentication**: JWT-based authentication system
+- **RESTful API**: Well-documented API endpoints for market data and analysis
 
-## Setup
+### CLI Tool
+- **Batch Processing**: Download historical OHLC data for multiple tickers
+- **Fundamentals Data**: Optional P/E, EPS, ROE, dividend yield
+- **Quarterly Data**: Merge quarterly income statement data
+- **Flexible Output**: Export to CSV for further analysis
 
-1. Create a virtual environment (recommended):
+## 📋 Prerequisites
 
+- Python 3.8 or higher
+- pip (Python package manager)
+- Docker (optional, for containerized deployment)
+
+## 🔧 Installation
+
+### Standard Installation
+
+1. **Clone the repository**
+```bash
+git clone https://github.com/Antares1980/trading-manager.git
+cd trading-manager
+```
+
+2. **Create a virtual environment** (recommended)
 ```bash
 python -m venv .venv
 ```
 
-2. Activate it:
-
+3. **Activate the virtual environment**
 - On Windows PowerShell:
   ```powershell
   .\.venv\Scripts\Activate.ps1
@@ -32,80 +53,223 @@ python -m venv .venv
   source .venv/bin/activate
   ```
 
-3. Install Python dependencies:
-
+4. **Install dependencies**
 ```bash
 pip install -r requirements.txt
 ```
 
-## CLI Usage
+### Docker Installation
 
-The CLI requires `--input` (CSV with a `ticker` column) and `--output`. Dates default to `2023-01-01` through today.
+Build and run with Docker:
+```bash
+docker build -t trading-manager .
+docker run -p 5000:5000 trading-manager
+```
+
+Or use Docker Compose:
+```bash
+docker-compose up
+```
+
+## 🎯 Quick Start
+
+### Running the Web Application
+
+Start the Flask server:
+```bash
+python app.py
+```
+
+The application will be available at `http://localhost:5000`
+
+### Using the Web Interface
+
+1. Open your browser and navigate to `http://localhost:5000`
+2. Login with demo credentials:
+   - Username: `demo`, Password: `demo123`
+   - OR Username: `admin`, Password: `admin123`
+3. Enter a stock ticker (e.g., AAPL, GOOGL, MSFT)
+4. Click "Analyze" to view charts and technical indicators
+5. Toggle different indicators on the price chart
+
+### API Endpoints
+
+#### Market Data
+- `GET /api/market/stock/<ticker>` - Get historical stock data
+- `GET /api/market/stock/<ticker>/info` - Get stock information
+- `GET /api/market/search?q=<query>` - Search for stocks
+
+#### Technical Analysis
+- `GET /api/analysis/indicators/<ticker>` - Calculate technical indicators
+- `GET /api/analysis/summary/<ticker>` - Get analysis summary with signals
+
+#### Authentication
+- `POST /api/auth/login` - Login and get JWT token
+- `POST /api/auth/register` - Register new user
+- `GET /api/auth/verify` - Verify JWT token
+
+Example API request:
+```bash
+curl http://localhost:5000/api/market/stock/AAPL?start=2024-01-01&end=2024-12-31
+```
+
+## 📊 CLI Usage
+
+The CLI tool (`trading_manager_cli.py`) allows batch processing of stock data.
+
+### Basic Usage
 
 ```bash
 python trading_manager_cli.py \
-  --input stocks.csv \
+  --input data/example_stocks.csv \
   --output prices.csv \
   --start 2024-01-01 \
-  --end 2024-12-31 \
+  --end 2024-12-31
+```
+
+### With Fundamentals
+
+```bash
+python trading_manager_cli.py \
+  --input data/example_stocks.csv \
+  --output fundamentals.csv \
   --fundamentals \
   --quarterly-fundamentals \
   --log-level DEBUG
 ```
 
-- `--fundamentals`: adds P/E, EPS, ROE, and Dividend Yield columns (repeat horizontally per ticker).
-- `--quarterly-fundamentals`: merges every quarterly income-statement metric and backward-fills values so the most recent quarter applies to subsequent trading days.
-- `--log-level`: specify `DEBUG`, `INFO`, `WARNING`, or `ERROR` for more/less console noise.
+### CLI Options
 
-## Input & Output Format
+- `--input`: CSV file with a `ticker` column (required)
+- `--output`: Output CSV filename (required)
+- `--start`: Start date (YYYY-MM-DD, default: 2023-01-01)
+- `--end`: End date (YYYY-MM-DD, default: today)
+- `--fundamentals`: Include P/E, EPS, ROE, dividend yield
+- `--quarterly-fundamentals`: Include quarterly income statement data
+- `--log-level`: Logging verbosity (DEBUG, INFO, WARNING, ERROR)
 
-- Input CSV must include a `ticker` column. Example:
-  ```csv
-  ticker
-  AAPL
-  GOOGL
-  MSFT
-  ```
-- Output CSV always contains: `Date`, `Ticker`, `Open`, `High`, `Low`, `Close`, `Volume`.
-- Enabling `--fundamentals` appends `P/E`, `EPS`, `ROE`, and `Dividend_Yield` columns.
-- Enabling `--quarterly-fundamentals` adds all quarterly-income-statement columns (BasicEPS, TotalRevenue, GrossProfit, NetIncome, OperatingIncome, ResearchAndDevelopment, etc.) merged onto the daily data.
+## 🏗️ Project Structure
 
-## Examples
+```
+trading-manager/
+├── app.py                      # Main Flask application
+├── requirements.txt            # Python dependencies
+├── Dockerfile                  # Docker configuration
+├── docker-compose.yml          # Docker Compose configuration
+├── README.md                   # This file
+├── backend/                    # Backend Python code
+│   ├── api/                    # API route handlers
+│   │   ├── market_routes.py   # Market data endpoints
+│   │   ├── analysis_routes.py # Technical analysis endpoints
+│   │   └── auth_routes.py     # Authentication endpoints
+│   ├── models/                 # Data models (future expansion)
+│   └── utils/                  # Utility modules
+│       ├── market_data.py     # Yahoo Finance integration
+│       └── technical_analysis.py # TA calculations
+├── frontend/                   # Frontend files
+│   ├── static/
+│   │   ├── css/
+│   │   │   └── style.css      # Application styles
+│   │   └── js/
+│   │       └── app.js         # Frontend JavaScript
+│   └── templates/
+│       └── index.html         # Main HTML template
+├── config/                     # Configuration files
+│   └── config.example.py      # Example configuration
+├── data/                       # Data directory
+│   └── example_stocks.csv     # Example ticker list
+├── tests/                      # Test directory (future expansion)
+├── trading_manager_cli.py     # CLI tool
+├── stock_fetcher.py           # Legacy CLI (v1)
+└── stock_fetcher_v2.py        # Legacy CLI (v2)
+```
 
-1. **Daily OHLC only**
+## 🔐 Security Notes
 
-   ```bash
-   python trading_manager_cli.py --input stocks.csv --output prices.csv
-   ```
+- Default credentials are for **development only**
+- Change `SECRET_KEY` and `JWT_SECRET_KEY` in production
+- User data is stored in-memory (use a database in production)
+- Enable HTTPS in production environments
 
-2. **Add current fundamentals**
+## 🛠️ Development
 
-   ```bash
-   python trading_manager_cli.py --input stocks.csv --output fundamentals.csv --fundamentals
-   ```
+### Environment Variables
 
-3. **Include every quarterly metric + debug logging**
+```bash
+export FLASK_DEBUG=True
+export SECRET_KEY=your-secret-key
+export JWT_SECRET_KEY=your-jwt-secret
+export PORT=5000
+```
 
-   ```bash
-   python trading_manager_cli.py \
-     --input stocks.csv \
-     --output prices_with_quarters.csv \
-     --fundamentals \
-     --quarterly-fundamentals \
-     --log-level DEBUG
-   ```
+### Running Tests
 
-## Troubleshooting
+```bash
+# Tests will be added in future releases
+python -m pytest tests/
+```
 
-- If no rows are written, check your tickers/date range and inspect the log output for Yahoo rate-limiting or connectivity errors.
-- The CLI adds one day to the provided `--end` date internally so that the final trading date is included in the range.
+## 📚 Technical Indicators Supported
 
-## Additional Notes
+- **SMA** (Simple Moving Average) - 20, 50 periods
+- **EMA** (Exponential Moving Average) - 20, 50 periods
+- **RSI** (Relative Strength Index) - 14 period
+- **MACD** (Moving Average Convergence Divergence)
+- **Bollinger Bands** - 20 period, 2 standard deviations
+- **ATR** (Average True Range) - 14 period
+- **OBV** (On-Balance Volume)
 
-- Historical files `stock_fetcher.py` and `stock_fetcher_v2.py` remain in the repo for reference but `trading_manager_cli.py` is the consolidated version.
-- The tool depends on Yahoo Finance via `yahooquery`; any breaking changes upstream may require updates.
-- No automated tests are provided; validate manually by running the CLI with a short ticker list and inspecting the resulting CSV.
+## 🐛 Troubleshooting
 
-## License & Attribution
+### Port Already in Use
+```bash
+# Use a different port
+export PORT=5001
+python app.py
+```
 
-- This tool is built with `pandas` and `yahooquery` and is meant for personal/educational use. Respect Yahoo Finance's terms when accessing their data.
+### Missing Dependencies
+```bash
+pip install -r requirements.txt --upgrade
+```
+
+### Yahoo Finance Rate Limiting
+- Add delays between requests
+- Use the CLI tool with smaller batches
+- Check `--log-level DEBUG` for detailed error messages
+
+## 📝 Example Data
+
+Example ticker list is provided in `data/example_stocks.csv`:
+```csv
+ticker
+AAPL
+GOOGL
+MSFT
+AMZN
+TSLA
+META
+NVDA
+JPM
+V
+WMT
+```
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📄 License & Attribution
+
+This tool is built with:
+- Flask (web framework)
+- pandas (data manipulation)
+- yahooquery (Yahoo Finance API)
+- ta (technical analysis library)
+- Chart.js (charting library)
+
+**For educational and personal use only.** Not financial advice. Respect Yahoo Finance's terms of service when accessing their data.
+
+## ⚠️ Disclaimer
+
+This software is for educational purposes only. Do not use it for actual trading decisions. The authors and contributors are not responsible for any financial losses incurred from using this software.

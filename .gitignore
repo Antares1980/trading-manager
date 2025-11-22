@@ -7,15 +7,35 @@ __pycache__/
 env/
 venv/
 .venv/
+*.egg-info/
+dist/
+build/
 
 # Data files
 *.csv
+!data/example_stocks.csv
 *.log
+
+# Flask
+instance/
+.env
+config.py
 
 # Editor-specific
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
 
 # OS-specific
 .DS_Store
 Thumbs.db
+
+# Docker
+.dockerignore
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
