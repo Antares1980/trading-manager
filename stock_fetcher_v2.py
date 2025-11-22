@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 """
-Stock Historical Price Fetcher CLI
+Stock Historical Price Fetcher CLI v2
 
-Fetches daily OHLC (Open, High, Low, Close) data for stocks listed in a CSV file
-using Yahoo Finance API via yahooquery library.
+Fetches daily OHLC (Open, High, Low, Close) data and historical fundamentals
+for stocks listed in a CSV file using Yahoo Finance API via yfinance library.
 
 Usage:
-    python stock_fetcher.py --input input_stocks.csv --output output_prices.csv --start 2023-01-01 --end 2023-12-31 [--fundamentals]
+    python stock_fetcher_v2.py --input input_stocks.csv --output output_prices.csv --start 2023-01-01 --end 2023-12-31 [--fundamentals]
 
 Input CSV format: A single column named 'ticker' with stock symbols (e.g., AAPL, GOOGL).
-Output CSV: Date, Ticker, Open, High, Low, Close, Volume[, P/E, EPS, ROE, Dividend_Yield if --fundamentals].
+Output CSV: Date, Ticker, Open, High, Low, Close, Volume[, EPS, Revenue, NetIncome, etc. if --fundamentals].
 """
 
 import argparse
 import pandas as pd
-from yahooquery import Ticker
+import yahooquery as yq
 from datetime import datetime
 import logging
 import time
@@ -23,71 +23,62 @@ from contextlib import redirect_stdout, redirect_stderr
 
 
 def fetch_stock_data(ticker, start_date, end_date, include_fundamentals=False):
-    """Fetch daily OHLC data for a single ticker with retry logic. Optionally include fundamentals."""
+    """Fetch daily OHLC data for a single ticker with retry logic. Optionally include historical fundamentals."""
     max_retries = 5
     for attempt in range(max_retries):
         try:
             logging.debug(f"Downloading data for {ticker} from {start_date} to {end_date} (attempt {attempt + 1})")
-            
-            t = Ticker(ticker, asynchronous=False)
-            data = t.history(start=start_date, end=end_date, interval='1d')
+            # Adjust end_date to be inclusive by adding one day
+            start_dt = pd.to_datetime(start_date)
+            end_dt = pd.to_datetime(end_date) + pd.Timedelta(days=1)
+            start_str = start_dt.strftime('%Y-%m-%d')
+            end_str = end_dt.strftime('%Y-%m-%d')
+            stock = yq.Ticker(ticker)
+            data = stock.history(start=start_str, end=end_str, interval='1d')
 
             logging.debug(f"Data shape: {data.shape}, columns: {list(data.columns)}")
-            if isinstance(data, pd.DataFrame) and data.empty:
+            if data.empty:
                 logging.warning(f"No data found for {ticker}")
                 return pd.DataFrame()
 
-            # Reset index to get 'symbol' and 'date' as columns
+            # Reset index to get 'Date' as column
             data = data.reset_index()
-            data.rename(columns={'symbol': 'Ticker', 'date': 'Date', 'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close', 'volume': 'Volume'}, inplace=True)
-            
-            # Fetch fundamentals if requested
+            data['Ticker'] = ticker
+
+            # Fetch historical fundamentals if requested
             if include_fundamentals:
                 try:
-                    logging.debug(f"Fetching fundamentals for {ticker}")
-                    key_stats = t.key_stats
-                    summary_detail = t.summary_detail
-                    
-                    logging.debug(f"key_stats keys: {list(key_stats.keys()) if key_stats else 'None'}")
-                    logging.debug(f"summary_detail keys: {list(summary_detail.keys()) if summary_detail else 'None'}")
-                    
-                    # Extract specific metrics (nested under ticker key)
-                    ticker_key = list(key_stats.keys())[0] if key_stats else None
-                    summary_key = list(summary_detail.keys())[0] if summary_detail else None
-                    
-                    if ticker_key and ticker_key in key_stats:
-                        inner_key_stats = key_stats[ticker_key]
-                        eps = inner_key_stats.get('trailingEps', None)
-                        roe = inner_key_stats.get('returnOnEquity', None)  # May not be available
+                    logging.debug(f"Fetching historical fundamentals for {ticker}")
+                    # Get quarterly earnings (historical EPS, revenue, net income)
+                    quarterly_earnings = stock.quarterly_earnings
+                    if not quarterly_earnings.empty:
+                        quarterly_earnings = quarterly_earnings.reset_index()
+                        quarterly_earnings.rename(columns={
+                            'Revenue': 'Quarterly_Revenue',
+                            'Earnings': 'Quarterly_EPS',
+                            'Quarter': 'Quarter_Date'
+                        }, inplace=True)
+                        # Merge quarterly data with daily data (forward fill to align dates)
+                        data = pd.merge_asof(data.sort_values('Date'), quarterly_earnings.sort_values('Quarter_Date'),
+                                           left_on='Date', right_on='Quarter_Date', direction='backward')
+                        data.drop(columns=['Quarter_Date'], inplace=True)
                     else:
-                        eps = roe = None
-                    
-                    if summary_key and summary_key in summary_detail:
-                        inner_summary = summary_detail[summary_key]
-                        pe = inner_summary.get('trailingPE', None)
-                        dividend_yield = inner_summary.get('dividendYield', None)
-                    else:
-                        pe = dividend_yield = None
-                    
-                    # Add as new columns (same value for all rows of this ticker)
-                    data['P/E'] = pe
-                    data['EPS'] = eps
-                    data['ROE'] = roe
-                    data['Dividend_Yield'] = dividend_yield
-                    
-                    logging.debug(f"Fundamentals for {ticker}: P/E={pe}, EPS={eps}, ROE={roe}, Dividend_Yield={dividend_yield}")
+                        logging.warning(f"No quarterly earnings data for {ticker}")
+                        data['Quarterly_EPS'] = None
+                        data['Quarterly_Revenue'] = None
+
+                    # Optionally add more fundamentals (e.g., balance sheet), but keep it simple for now
+                    # Example: quarterly_balance_sheet = stock.quarterly_balance_sheet
+
                 except Exception as e:
-                    logging.warning(f"Failed to fetch fundamentals for {ticker}: {e}")
-                    # Add NaN columns if fetch fails
-                    data['P/E'] = None
-                    data['EPS'] = None
-                    data['ROE'] = None
-                    data['Dividend_Yield'] = None
-            
+                    logging.warning(f"Failed to fetch historical fundamentals for {ticker}: {e}")
+                    data['Quarterly_EPS'] = None
+                    data['Quarterly_Revenue'] = None
+
             logging.debug(f"Successfully fetched {len(data)} rows for {ticker}")
             columns = ['Date', 'Ticker', 'Open', 'High', 'Low', 'Close', 'Volume']
             if include_fundamentals:
-                columns.extend(['P/E', 'EPS', 'ROE', 'Dividend_Yield'])
+                columns.extend(['Quarterly_EPS', 'Quarterly_Revenue'])
             return data[columns]
         except Exception as e:
             logging.warning(f"Attempt {attempt + 1} failed for {ticker}: {e}")
@@ -99,13 +90,13 @@ def fetch_stock_data(ticker, start_date, end_date, include_fundamentals=False):
                 return pd.DataFrame()
 
 def main():
-    parser = argparse.ArgumentParser(description="Fetch historical stock prices from Yahoo Finance.", add_help=False)
+    parser = argparse.ArgumentParser(description="Fetch historical stock prices and fundamentals from Yahoo Finance.", add_help=False)
     parser.add_argument('--help', action='store_true', help='Show help message')
     parser.add_argument('--input', help='Path to input CSV file with tickers (column: ticker). Required.')
     parser.add_argument('--output', help='Path to output CSV file for results. Required.')
     parser.add_argument('--start', default='2023-01-01', help='Start date in YYYY-MM-DD format (default: 2023-01-01)')
     parser.add_argument('--end', default=datetime.today().strftime('%Y-%m-%d'), help='End date in YYYY-MM-DD format (default: today)')
-    parser.add_argument('--fundamentals', action='store_true', help='Include fundamental indicators (P/E, EPS, ROE, Dividend Yield) in the output')
+    parser.add_argument('--fundamentals', action='store_true', help='Include historical quarterly fundamentals (EPS, Revenue) in the output')
     parser.add_argument('--log-level', default='INFO', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'], help='Set the logging level (default: INFO)')
 
     # Parse known args to check for --help
@@ -127,10 +118,10 @@ def main():
         datefmt='%Y-%m-%d %H:%M:%S'
     )
     # Suppress verbose logging from yfinance and related libraries
-    logging.getLogger('yahooquery').setLevel(logging.WARNING)
+    logging.getLogger('yfinance').setLevel(logging.CRITICAL)
     logging.getLogger('urllib3').setLevel(logging.WARNING)
     logging.getLogger('requests').setLevel(logging.WARNING)
-    logging.info("Starting stock data fetcher")
+    logging.info("Starting stock data fetcher v2")
 
     # Read input CSV
     try:
