@@ -2,7 +2,11 @@
 Authentication API endpoints.
 
 Provides JWT-based authentication for the application.
-For development purposes, uses simple in-memory user storage.
+
+SECURITY NOTE: For development purposes only!
+- Uses simple in-memory user storage (not persistent)
+- Passwords are hashed with SHA-256 (use bcrypt/PBKDF2 in production)
+- In production, implement proper database storage and security measures
 """
 
 from flask import Blueprint, jsonify, request
@@ -29,6 +33,8 @@ USERS = {
     }
 }
 
+# SECURITY: In production, use environment variable or config file
+# Never commit actual secret keys to version control
 SECRET_KEY = 'jwt-secret-key-change-in-production'
 
 

@@ -115,12 +115,12 @@ function handleLogin(e) {
             showUserInfo(data.user);
             hideLoginModal();
         } else {
-            alert(data.error || 'Login failed');
+            showError(data.error || 'Login failed');
         }
     })
     .catch(error => {
         console.error('Login error:', error);
-        alert('Login failed. Please try again.');
+        showError('Login failed. Please try again.');
     });
 }
 
