@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Manager - Technical Analysis Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="{{ url_for('static', filename='js/chart-fallback.js') }}"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <h1>📈 Trading Manager</h1>
+            </div>
+            <nav class="nav">
+                <div id="auth-section">
+                    <button id="login-btn" class="btn btn-primary">Login</button>
+                    <div id="user-info" class="user-info" style="display: none;">
+                        <span id="username"></span>
+                        <button id="logout-btn" class="btn btn-secondary">Logout</button>
+                    </div>
+                </div>
+            </nav>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Stock Search Section -->
+            <section class="search-section">
+                <div class="search-container">
+                    <input 
+                        type="text" 
+                        id="ticker-input" 
+                        placeholder="Enter stock ticker (e.g., AAPL, GOOGL, MSFT)" 
+                        class="search-input"
+                    >
+                    <button id="search-btn" class="btn btn-primary">Analyze</button>
+                </div>
+                <div id="search-suggestions" class="suggestions"></div>
+            </section>
+
+            <!-- Loading Indicator -->
+            <div id="loading" class="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p>Loading data...</p>
+            </div>
+
+            <!-- Error Message -->
+            <div id="error-message" class="error-message" style="display: none;"></div>
+
+            <!-- Stock Info Section -->
+            <section id="stock-info" class="stock-info" style="display: none;">
+                <h2 id="stock-name">Stock Information</h2>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="label">Current Price:</span>
+                        <span id="current-price" class="value">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Volume:</span>
+                        <span id="volume" class="value">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">P/E Ratio:</span>
+                        <span id="pe-ratio" class="value">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Market Cap:</span>
+                        <span id="market-cap" class="value">-</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Chart Section -->
+            <section id="chart-section" class="chart-section" style="display: none;">
+                <div class="chart-controls">
+                    <h3>Price Chart with Technical Indicators</h3>
+                    <div class="indicator-toggles">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="toggle-sma" checked> SMA (20, 50)
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="toggle-ema"> EMA (20, 50)
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="toggle-bbands"> Bollinger Bands
+                        </label>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="price-chart"></canvas>
+                </div>
+            </section>
+
+            <!-- Technical Indicators Section -->
+            <section id="indicators-section" class="indicators-section" style="display: none;">
+                <div class="indicators-grid">
+                    <div class="indicator-card">
+                        <h4>RSI (14)</h4>
+                        <canvas id="rsi-chart"></canvas>
+                        <div class="indicator-value">
+                            <span id="rsi-value">-</span>
+                            <span id="rsi-signal" class="signal-badge">-</span>
+                        </div>
+                    </div>
+                    <div class="indicator-card">
+                        <h4>MACD</h4>
+                        <canvas id="macd-chart"></canvas>
+                        <div class="indicator-value">
+                            <span id="macd-value">-</span>
+                            <span id="macd-signal" class="signal-badge">-</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Signals Section -->
+            <section id="signals-section" class="signals-section" style="display: none;">
+                <h3>Trading Signals</h3>
+                <div id="signals-list" class="signals-list"></div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; 2024 Trading Manager. For educational purposes only. Not financial advice.</p>
+        </footer>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Login</h2>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-username">Username</label>
+                    <input type="text" id="login-username" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Login</button>
+                <p class="form-note">Demo credentials: demo/demo123 or admin/admin123</p>
+            </form>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
