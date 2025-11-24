@@ -1,16 +1,23 @@
 # Trading Manager
 
-A comprehensive trading analysis platform with Flask backend API and interactive web frontend for technical analysis of stocks. Features real-time market data fetching, technical indicator calculations, and beautiful chart visualizations.
+A comprehensive trading analysis platform with Flask backend API, TimescaleDB for time-series data storage, Celery for background processing, and interactive web frontend for technical analysis of stocks.
 
 ## 🚀 Features
+
+### New: Persistent Storage & Background Processing
+- **TimescaleDB Integration**: Optimized time-series database for OHLCV data with automatic compression and retention
+- **Background Tasks**: Celery-based async processing for technical indicators and signal generation
+- **RESTful API**: Complete CRUD operations for users, watchlists, assets, candles, indicators, and signals
+- **Database Migrations**: Alembic for schema versioning and management
+- **Seed Data**: Demo users and 365 days of historical data for 12+ assets
 
 ### Web Application
 - **Interactive Dashboard**: Modern, responsive web interface for stock analysis
 - **Real-time Charts**: Visualize stock prices with Chart.js integration
 - **Technical Indicators**: RSI, MACD, SMA, EMA, Bollinger Bands, ATR, OBV
 - **Trading Signals**: Automated signal generation based on technical analysis
-- **User Authentication**: JWT-based authentication system
-- **RESTful API**: Well-documented API endpoints for market data and analysis
+- **User Authentication**: JWT-based authentication system with bcrypt password hashing
+- **Watchlists**: Create and manage custom asset watchlists with price alerts
 
 ### CLI Tool
 - **Batch Processing**: Download historical OHLC data for multiple tickers
@@ -20,11 +27,61 @@ A comprehensive trading analysis platform with Flask backend API and interactive
 
 ## 📋 Prerequisites
 
-- Python 3.8 or higher
-- pip (Python package manager)
-- Docker (optional, for containerized deployment)
+- Python 3.11 or higher
+- Docker and Docker Compose (recommended)
+- PostgreSQL/TimescaleDB (via Docker or local install)
+- Redis (via Docker or local install)
 
-## 🔧 Installation
+## 🚀 Quick Start with Docker (Recommended)
+
+The fastest way to get started is using Docker Compose:
+
+```bash
+# Clone the repository
+git clone https://github.com/Antares1980/trading-manager.git
+cd trading-manager
+
+# Copy environment file
+cp .env.example .env
+
+# Start all services (TimescaleDB, Redis, Backend, Worker, PgAdmin)
+docker-compose up --build
+
+# In a new terminal, run database migrations
+docker-compose exec backend alembic upgrade head
+
+# Seed the database with demo data
+docker-compose exec backend python -m flask db-seed
+```
+
+**Access the application:**
+- Web UI: http://localhost:5000
+- PgAdmin: http://localhost:5050 (admin@trading-manager.com / admin123)
+- API: http://localhost:5000/api
+
+**Demo credentials:**
+- Username: `demo`, Password: `demo123`
+- Username: `admin`, Password: `admin123`
+
+**What's included:**
+- 12+ demo assets (AAPL, GOOGL, MSFT, AMZN, TSLA, META, NVDA, JPM, V, WMT, SPY, BTC-USD)
+- 365 days of historical candle data per asset
+- Pre-configured watchlists
+- Ready-to-use PostgreSQL with TimescaleDB extension
+- Celery worker for background tasks
+- Redis for Celery broker and caching
+
+## 📚 Documentation
+
+Comprehensive documentation is available in the `docs/` directory:
+
+- **[Database Setup & Queries](docs/db.md)**: TimescaleDB configuration, hypertables, SQL examples
+- **[API Documentation](docs/api.md)**: Complete API endpoint reference with examples
+- **[Worker Configuration](docs/worker.md)**: Celery setup, task management, monitoring
+- **[Developer Guide](docs/dev.md)**: Development workflow, debugging, testing
+- **[Security Best Practices](docs/security.md)**: Authentication, secrets, database security
+
+## 🔧 Manual Installation
 
 ### Standard Installation
 
@@ -58,39 +115,104 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-### Docker Installation
+5. **Set up services**
 
-Build and run with Docker:
+You'll need PostgreSQL/TimescaleDB and Redis running:
+
 ```bash
-docker build -t trading-manager .
-docker run -p 5000:5000 trading-manager
+# Start services with Docker
+docker-compose up timescaledb redis -d
+
+# Or install locally (macOS)
+brew install postgresql@15 redis
+brew services start postgresql@15
+brew services start redis
 ```
 
-Or use Docker Compose:
+6. **Configure environment**
 ```bash
-docker-compose up
+cp .env.example .env
+# Edit .env with your database and Redis URLs
 ```
 
-## 🎯 Quick Start
-
-### Running the Web Application
-
-Start the Flask server:
+7. **Run database migrations**
 ```bash
+alembic upgrade head
+```
+
+8. **Seed demo data (optional)**
+```bash
+python -m flask db-seed
+```
+
+9. **Start the application**
+```bash
+# Flask backend
 python app.py
+
+# Celery worker (in another terminal)
+celery -A backend.tasks.celery_app worker --loglevel=info
 ```
 
 The application will be available at `http://localhost:5000`
 
-### Using the Web Interface
+## 🎯 Using the Application
+
+### Web Interface
 
 1. Open your browser and navigate to `http://localhost:5000`
 2. Login with demo credentials:
    - Username: `demo`, Password: `demo123`
    - OR Username: `admin`, Password: `admin123`
-3. Enter a stock ticker (e.g., AAPL, GOOGL, MSFT)
-4. Click "Analyze" to view charts and technical indicators
-5. Toggle different indicators on the price chart
+3. Create watchlists and add assets
+4. View historical candle data and technical indicators
+5. Analyze trading signals generated by the system
+
+### API Usage
+
+The application provides a complete REST API. See [API Documentation](docs/api.md) for details.
+
+**Example: Get all assets**
+```bash
+curl http://localhost:5000/api/assets/
+```
+
+**Example: Get candle data**
+```bash
+curl "http://localhost:5000/api/candles/?asset_id=<uuid>&interval=1d&limit=30"
+```
+
+**Example: Login and get token**
+```bash
+curl -X POST http://localhost:5000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"demo","password":"demo123"}'
+```
+
+### Background Tasks
+
+Compute indicators and signals for assets:
+
+```python
+from backend.tasks.indicators import compute_indicators
+from backend.tasks.signals import compute_signals
+
+# Compute indicators for all assets
+result = compute_indicators.delay()
+
+# Compute signals for all assets
+result = compute_signals.delay()
+
+# Check result
+print(result.get(timeout=300))
+```
+
+Or via CLI (if worker is running):
+
+```bash
+# Using Python
+python -c "from backend.tasks.indicators import compute_indicators; compute_indicators.delay()"
+```
 
 ### API Endpoints
 
