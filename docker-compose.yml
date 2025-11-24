@@ -1,20 +1,130 @@
 version: '3.8'
 
 services:
-  trading-manager:
-    build: .
-    container_name: trading-manager
+  # TimescaleDB (PostgreSQL with time-series extension)
+  timescaledb:
+    image: timescale/timescaledb:latest-pg15
+    container_name: trading-timescaledb
+    environment:
+      - POSTGRES_USER=${DB_USER:-trading_user}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-trading_password}
+      - POSTGRES_DB=${DB_NAME:-trading_manager}
+    ports:
+      - "5432:5432"
+    volumes:
+      - timescaledb_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-trading_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for Celery broker and result backend
+  redis:
+    image: redis:7-alpine
+    container_name: trading-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Flask backend API
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: trading-backend
+    command: python -m flask run --host=0.0.0.0 --port=5000
     ports:
       - "5000:5000"
     environment:
-      - FLASK_DEBUG=True
-      - SECRET_KEY=change-this-in-production
-      - JWT_SECRET_KEY=change-this-jwt-secret-in-production
+      - FLASK_APP=backend.app:create_app
+      - FLASK_ENV=${FLASK_ENV:-development}
+      - FLASK_DEBUG=${FLASK_DEBUG:-True}
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-dev-jwt-secret}
+      - DATABASE_URL=postgresql://${DB_USER:-trading_user}:${DB_PASSWORD:-trading_password}@timescaledb:5432/${DB_NAME:-trading_manager}
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_ENABLE_BEAT=${CELERY_ENABLE_BEAT:-false}
     volumes:
+      - ./backend:/app/backend
+      - ./frontend:/app/frontend
       - ./data:/app/data
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 30s
-      timeout: 3s
+      timeout: 5s
       retries: 3
+
+  # Celery worker for background tasks
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: trading-worker
+    command: celery -A backend.tasks.celery_app worker --loglevel=info
+    environment:
+      - FLASK_ENV=${FLASK_ENV:-development}
+      - DATABASE_URL=postgresql://${DB_USER:-trading_user}:${DB_PASSWORD:-trading_password}@timescaledb:5432/${DB_NAME:-trading_manager}
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_ENABLE_BEAT=${CELERY_ENABLE_BEAT:-false}
+    volumes:
+      - ./backend:/app/backend
+    depends_on:
+      - timescaledb
+      - redis
+    restart: unless-stopped
+
+  # Celery Beat scheduler (optional, disabled by default)
+  # Uncomment to enable scheduled tasks
+  # beat:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.backend
+  #   container_name: trading-beat
+  #   command: celery -A backend.tasks.celery_app beat --loglevel=info
+  #   environment:
+  #     - FLASK_ENV=${FLASK_ENV:-development}
+  #     - DATABASE_URL=postgresql://${DB_USER:-trading_user}:${DB_PASSWORD:-trading_password}@timescaledb:5432/${DB_NAME:-trading_manager}
+  #     - REDIS_URL=redis://redis:6379/0
+  #     - CELERY_ENABLE_BEAT=true
+  #   volumes:
+  #     - ./backend:/app/backend
+  #   depends_on:
+  #     - timescaledb
+  #     - redis
+  #   restart: unless-stopped
+
+  # PgAdmin for database management
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: trading-pgadmin
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL:-admin@trading-manager.com}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD:-admin123}
+      - PGADMIN_LISTEN_PORT=${PGADMIN_LISTEN_PORT:-5050}
+    ports:
+      - "5050:5050"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - timescaledb
+    restart: unless-stopped
+
+volumes:
+  timescaledb_data:
+  redis_data:
+  pgadmin_data:
