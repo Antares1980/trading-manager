@@ -2,6 +2,10 @@
 Dashboard API endpoints.
 
 Provides dashboard summary data including watchlist summaries and market indices.
+
+Note: Percentage change calculations (1D, 1W, 1M, 1Y) are anchored to the timestamp
+of the latest available daily candle for each asset, not the current wall-clock time.
+This ensures accurate comparisons even when market data is delayed or synthetic.
 """
 
 from flask import Blueprint, jsonify, request
@@ -127,12 +131,6 @@ def get_watchlist_summary():
                     'message': 'Watchlist is empty. Add assets to see your dashboard.'
                 }), 200
             
-            # Calculate date references
-            one_day_ago = now - timedelta(days=1)
-            one_week_ago = now - timedelta(days=7)
-            one_month_ago = now - timedelta(days=30)
-            one_year_ago = now - timedelta(days=365)
-            
             # Process each asset
             assets_data = []
             normalized_values = []
@@ -168,11 +166,23 @@ def get_watchlist_summary():
                 
                 current_price = float(latest_candle.close)
                 
-                # Get historical prices
+                # Anchor timestamp calculations to the latest candle timestamp
+                # This ensures accurate percentage changes even when market data is delayed
+                anchor_ts = latest_candle.ts
+                one_day_ago = anchor_ts - timedelta(days=1)
+                one_week_ago = anchor_ts - timedelta(days=7)
+                one_month_ago = anchor_ts - timedelta(days=30)
+                one_year_ago = anchor_ts - timedelta(days=365)
+                
+                # Get historical prices relative to the anchor timestamp
                 price_1d = get_price_at_date(session, asset.id, one_day_ago)
                 price_1w = get_price_at_date(session, asset.id, one_week_ago)
                 price_1m = get_price_at_date(session, asset.id, one_month_ago)
                 price_1y = get_price_at_date(session, asset.id, one_year_ago)
+                
+                # Log warning if insufficient historical data for any window
+                if price_1y is None:
+                    logger.debug(f"Asset {asset.symbol}: insufficient data for 1Y change calculation")
                 
                 # Calculate percentage changes
                 change_1d = calculate_percentage_change(current_price, price_1d)
