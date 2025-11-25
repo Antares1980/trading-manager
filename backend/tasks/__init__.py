@@ -11,7 +11,7 @@ import logging
 import os
 
 # Import configuration
-from backend.config import get_config
+from backend.settings import get_config
 
 logger = logging.getLogger(__name__)
 

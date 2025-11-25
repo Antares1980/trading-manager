@@ -19,7 +19,7 @@ from alembic import context
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 # Import the application configuration and models
-from backend.config import get_config
+from backend.settings import get_config
 from backend.db import Base
 
 # Import all models to ensure they're registered with Base.metadata

@@ -12,7 +12,7 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from backend.app import create_app
-from backend.config import TestConfig
+from backend.settings import TestingConfig
 
 
 @pytest.fixture

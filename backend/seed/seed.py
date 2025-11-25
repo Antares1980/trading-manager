@@ -13,7 +13,7 @@ from backend.models import (
     User, Asset, Watchlist, WatchlistItem,
     Candle, Indicator, Signal
 )
-from backend.config import get_config
+from backend.settings import get_config
 
 logger = logging.getLogger(__name__)
 
