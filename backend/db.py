@@ -30,13 +30,18 @@ def init_db(database_uri, echo=False):
     """
     global _engine, _session_factory
     
-    _engine = create_engine(
-        database_uri,
-        echo=echo,
-        pool_pre_ping=True,  # Verify connections before using
-        pool_size=10,
-        max_overflow=20
-    )
+    # Configure engine options based on database type
+    engine_options = {
+        'echo': echo,
+        'pool_pre_ping': True,  # Verify connections before using
+    }
+    
+    # Only add pool settings for non-SQLite databases
+    if not database_uri.startswith('sqlite'):
+        engine_options['pool_size'] = 10
+        engine_options['max_overflow'] = 20
+    
+    _engine = create_engine(database_uri, **engine_options)
     
     _session_factory = scoped_session(
         sessionmaker(

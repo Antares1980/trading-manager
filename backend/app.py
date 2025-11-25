@@ -129,9 +129,10 @@ def create_app(config_name=None):
     @app.route('/health')
     def health():
         """Health check endpoint that verifies database connectivity."""
+        from sqlalchemy import text
         try:
             session = get_session()
-            session.execute('SELECT 1')
+            session.execute(text('SELECT 1'))
             session.close()
             return {'status': 'healthy', 'database': 'connected'}, 200
         except Exception as e:
