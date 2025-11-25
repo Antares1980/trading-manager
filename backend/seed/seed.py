@@ -10,8 +10,8 @@ import random
 
 from backend.db import init_db, session_scope, get_engine
 from backend.models import (
-    User, Asset, AssetType, Watchlist, WatchlistItem,
-    Candle, CandleInterval, Indicator, IndicatorType, Signal, SignalType, SignalStrength
+    User, Asset, Watchlist, WatchlistItem,
+    Candle, Indicator, Signal
 )
 from backend.config import get_config
 
@@ -61,18 +61,18 @@ def seed_database(force=False):
         
         # Create demo assets
         assets_data = [
-            ('AAPL', 'Apple Inc.', AssetType.STOCK, 'NASDAQ', 'Technology', 'Consumer Electronics'),
-            ('GOOGL', 'Alphabet Inc.', AssetType.STOCK, 'NASDAQ', 'Technology', 'Internet Services'),
-            ('MSFT', 'Microsoft Corporation', AssetType.STOCK, 'NASDAQ', 'Technology', 'Software'),
-            ('AMZN', 'Amazon.com Inc.', AssetType.STOCK, 'NASDAQ', 'Consumer Cyclical', 'Internet Retail'),
-            ('TSLA', 'Tesla Inc.', AssetType.STOCK, 'NASDAQ', 'Consumer Cyclical', 'Auto Manufacturers'),
-            ('META', 'Meta Platforms Inc.', AssetType.STOCK, 'NASDAQ', 'Technology', 'Internet Services'),
-            ('NVDA', 'NVIDIA Corporation', AssetType.STOCK, 'NASDAQ', 'Technology', 'Semiconductors'),
-            ('JPM', 'JPMorgan Chase & Co.', AssetType.STOCK, 'NYSE', 'Financial', 'Banks'),
-            ('V', 'Visa Inc.', AssetType.STOCK, 'NYSE', 'Financial', 'Credit Services'),
-            ('WMT', 'Walmart Inc.', AssetType.STOCK, 'NYSE', 'Consumer Defensive', 'Discount Stores'),
-            ('SPY', 'SPDR S&P 500 ETF Trust', AssetType.ETF, 'NYSE', None, None),
-            ('BTC-USD', 'Bitcoin USD', AssetType.CRYPTO, 'CRYPTO', None, None),
+            ('AAPL', 'Apple Inc.', 'stock', 'NASDAQ', 'Technology', 'Consumer Electronics'),
+            ('GOOGL', 'Alphabet Inc.', 'stock', 'NASDAQ', 'Technology', 'Internet Services'),
+            ('MSFT', 'Microsoft Corporation', 'stock', 'NASDAQ', 'Technology', 'Software'),
+            ('AMZN', 'Amazon.com Inc.', 'stock', 'NASDAQ', 'Consumer Cyclical', 'Internet Retail'),
+            ('TSLA', 'Tesla Inc.', 'stock', 'NASDAQ', 'Consumer Cyclical', 'Auto Manufacturers'),
+            ('META', 'Meta Platforms Inc.', 'stock', 'NASDAQ', 'Technology', 'Internet Services'),
+            ('NVDA', 'NVIDIA Corporation', 'stock', 'NASDAQ', 'Technology', 'Semiconductors'),
+            ('JPM', 'JPMorgan Chase & Co.', 'stock', 'NYSE', 'Financial', 'Banks'),
+            ('V', 'Visa Inc.', 'stock', 'NYSE', 'Financial', 'Credit Services'),
+            ('WMT', 'Walmart Inc.', 'stock', 'NYSE', 'Consumer Defensive', 'Discount Stores'),
+            ('SPY', 'SPDR S&P 500 ETF Trust', 'etf', 'NYSE', None, None),
+            ('BTC-USD', 'Bitcoin USD', 'crypto', 'CRYPTO', None, None),
         ]
         
         assets = []
@@ -150,7 +150,7 @@ def seed_database(force=False):
             current_date = start_date
             while current_date <= end_date:
                 # Skip weekends for stocks
-                if asset.asset_type in [AssetType.STOCK, AssetType.ETF]:
+                if asset.asset_type in ['stock', 'etf']:
                     if current_date.weekday() >= 5:  # Saturday or Sunday
                         current_date += timedelta(days=1)
                         continue
@@ -170,7 +170,7 @@ def seed_database(force=False):
                 candle = Candle(
                     asset_id=asset.id,
                     ts=current_date,
-                    interval=CandleInterval.DAY_1,
+                    interval='1d',
                     open=round(open_price, 2),
                     high=round(high_price, 2),
                     low=round(low_price, 2),
