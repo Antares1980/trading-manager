@@ -49,7 +49,8 @@ def test_dashboard_assets_have_required_fields(client, auth_token):
     
     # Check required fields for each asset
     required_fields = ['symbol', 'name', 'last_price', 'change_1d', 'change_1w', 
-                       'change_1m', 'change_1y', 'sparkline', 'data_status']
+                       'change_1m', 'change_1y', 'sparkline', 'data_status',
+                       'asset_id', 'watchlist_item_id']
     
     for asset in assets:
         for field in required_fields:
@@ -145,6 +146,24 @@ def test_dashboard_quick_stats(client, auth_token):
     assert stats['asset_count'] >= 0
 
 
+def test_dashboard_default_watchlist_endpoint(client, auth_token):
+    """Test the default watchlist endpoint."""
+    response = client.get(
+        '/api/dashboard/default-watchlist',
+        headers={'Authorization': f'Bearer {auth_token}'}
+    )
+    assert response.status_code == 200
+    
+    data = response.json
+    assert 'success' in data
+    assert data['success'] is True
+    assert 'watchlist' in data
+    
+    watchlist = data['watchlist']
+    assert 'id' in watchlist
+    assert 'name' in watchlist
+
+
 def test_dashboard_page_loads(client):
     """Test that the dashboard page loads."""
     response = client.get('/dashboard')
@@ -157,6 +176,100 @@ def test_asset_page_redirects(client):
     response = client.get('/asset/AAPL', follow_redirects=False)
     assert response.status_code == 302
     assert '/?ticker=AAPL' in response.headers['Location']
+
+
+def test_search_assets(client, auth_token):
+    """Test the asset search endpoint."""
+    response = client.get(
+        '/api/assets/?search=AAPL&limit=10',
+        headers={'Authorization': f'Bearer {auth_token}'}
+    )
+    assert response.status_code == 200
+    
+    data = response.json
+    assert 'assets' in data
+    # Should find AAPL from test data
+    assert len(data['assets']) > 0
+    
+    # Test with symbol that exists
+    symbols = [a['symbol'] for a in data['assets']]
+    assert 'AAPL' in symbols
+
+
+def test_add_asset_to_watchlist(client, auth_token):
+    """Test adding an asset to watchlist."""
+    # First get the default watchlist
+    response = client.get(
+        '/api/dashboard/default-watchlist',
+        headers={'Authorization': f'Bearer {auth_token}'}
+    )
+    assert response.status_code == 200
+    watchlist_id = response.json['watchlist']['id']
+    
+    # Get list of assets to find one not in watchlist
+    response = client.get(
+        '/api/assets/?limit=100',
+        headers={'Authorization': f'Bearer {auth_token}'}
+    )
+    assert response.status_code == 200
+    all_assets = response.json['assets']
+    
+    # Get current watchlist assets
+    response = client.get(
+        '/api/dashboard/watchlist-summary',
+        headers={'Authorization': f'Bearer {auth_token}'}
+    )
+    assert response.status_code == 200
+    current_asset_ids = [a['asset_id'] for a in response.json.get('assets', [])]
+    
+    # Find an asset not in watchlist, or use an existing one to test duplicate handling
+    test_asset = all_assets[0] if all_assets else None
+    if test_asset and test_asset['id'] in current_asset_ids:
+        # Asset already in watchlist, test duplicate prevention
+        response = client.post(
+            f'/api/watchlists/{watchlist_id}/items',
+            headers={'Authorization': f'Bearer {auth_token}'},
+            json={'asset_id': test_asset['id']}
+        )
+        assert response.status_code == 409  # Conflict - already exists
+
+
+def test_remove_asset_from_watchlist(client, auth_token):
+    """Test removing an asset from watchlist."""
+    # Get watchlist summary to get an item to remove
+    response = client.get(
+        '/api/dashboard/watchlist-summary',
+        headers={'Authorization': f'Bearer {auth_token}'}
+    )
+    assert response.status_code == 200
+    
+    data = response.json
+    assets = data.get('assets', [])
+    watchlist_info = data.get('watchlist_info')
+    
+    if assets and watchlist_info:
+        # Get the first asset's watchlist item ID
+        asset = assets[0]
+        watchlist_id = watchlist_info['id']
+        watchlist_item_id = asset['watchlist_item_id']
+        
+        # Remove the asset
+        response = client.delete(
+            f'/api/watchlists/{watchlist_id}/items/{watchlist_item_id}',
+            headers={'Authorization': f'Bearer {auth_token}'}
+        )
+        assert response.status_code == 200
+        
+        # Verify the asset is removed
+        response = client.get(
+            '/api/dashboard/watchlist-summary',
+            headers={'Authorization': f'Bearer {auth_token}'}
+        )
+        assert response.status_code == 200
+        
+        new_assets = response.json.get('assets', [])
+        new_ids = [a['watchlist_item_id'] for a in new_assets]
+        assert watchlist_item_id not in new_ids
 
 
 if __name__ == '__main__':

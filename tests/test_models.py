@@ -7,9 +7,8 @@ Run with: pytest tests/test_models.py
 import pytest
 from datetime import datetime, timezone
 from backend.models import (
-    User, Asset, AssetType, Watchlist, WatchlistItem,
-    Candle, CandleInterval, Indicator, IndicatorType,
-    Signal, SignalType, SignalStrength
+    User, Asset, Watchlist, WatchlistItem,
+    Candle, Indicator, Signal
 )
 
 
@@ -39,14 +38,14 @@ def test_asset_model():
     asset = Asset(
         symbol='AAPL',
         name='Apple Inc.',
-        asset_type=AssetType.STOCK,
+        asset_type='stock',
         exchange='NASDAQ',
         currency='USD',
         sector='Technology'
     )
     
     assert asset.symbol == 'AAPL'
-    assert asset.asset_type == AssetType.STOCK
+    assert asset.asset_type == 'stock'
     
     # Test to_dict
     asset_dict = asset.to_dict(include_timestamps=False)
@@ -57,7 +56,7 @@ def test_asset_model():
 def test_watchlist_model():
     """Test Watchlist model creation."""
     import uuid
-    user_id = uuid.uuid4()
+    user_id = str(uuid.uuid4())
     
     watchlist = Watchlist(
         user_id=user_id,
@@ -67,7 +66,7 @@ def test_watchlist_model():
     )
     
     assert watchlist.name == 'My Watchlist'
-    assert str(watchlist.user_id) == str(user_id)
+    assert watchlist.user_id == user_id
     
     # Test to_dict
     wl_dict = watchlist.to_dict(include_timestamps=False)
@@ -77,12 +76,12 @@ def test_watchlist_model():
 def test_candle_model():
     """Test Candle model creation."""
     import uuid
-    asset_id = uuid.uuid4()
+    asset_id = str(uuid.uuid4())
     
     candle = Candle(
         asset_id=asset_id,
         ts=datetime.now(timezone.utc),
-        interval=CandleInterval.DAY_1,
+        interval='1d',
         open=100.0,
         high=105.0,
         low=99.0,
@@ -91,7 +90,7 @@ def test_candle_model():
     )
     
     assert candle.open == 100.0
-    assert candle.interval == CandleInterval.DAY_1
+    assert candle.interval == '1d'
     
     # Test to_dict
     candle_dict = candle.to_dict(include_timestamps=False)
@@ -102,18 +101,18 @@ def test_candle_model():
 def test_indicator_model():
     """Test Indicator model creation."""
     import uuid
-    asset_id = uuid.uuid4()
+    asset_id = str(uuid.uuid4())
     
     indicator = Indicator(
         asset_id=asset_id,
         ts=datetime.now(timezone.utc),
-        indicator_type=IndicatorType.RSI,
+        indicator_type='rsi',
         name='RSI_14',
         value=45.5,
-        parameters={'period': 14}
+        parameters='{"period": 14}'
     )
     
-    assert indicator.indicator_type == IndicatorType.RSI
+    assert indicator.indicator_type == 'rsi'
     assert indicator.value == 45.5
     
     # Test to_dict
@@ -125,20 +124,20 @@ def test_indicator_model():
 def test_signal_model():
     """Test Signal model creation."""
     import uuid
-    asset_id = uuid.uuid4()
+    asset_id = str(uuid.uuid4())
     
     signal = Signal(
         asset_id=asset_id,
         ts=datetime.now(timezone.utc),
-        signal_type=SignalType.BUY,
-        strength=SignalStrength.MODERATE,
+        signal_type='buy',
+        strength='moderate',
         confidence=65.0,
         strategy='Test Strategy',
         rationale='Test rationale'
     )
     
-    assert signal.signal_type == SignalType.BUY
-    assert signal.strength == SignalStrength.MODERATE
+    assert signal.signal_type == 'buy'
+    assert signal.strength == 'moderate'
     assert signal.confidence == 65.0
     
     # Test to_dict
@@ -150,8 +149,8 @@ def test_signal_model():
 def test_watchlist_item_model():
     """Test WatchlistItem model creation."""
     import uuid
-    watchlist_id = uuid.uuid4()
-    asset_id = uuid.uuid4()
+    watchlist_id = str(uuid.uuid4())
+    asset_id = str(uuid.uuid4())
     
     item = WatchlistItem(
         watchlist_id=watchlist_id,
@@ -160,8 +159,8 @@ def test_watchlist_item_model():
         notes='Test notes'
     )
     
-    assert str(item.watchlist_id) == str(watchlist_id)
-    assert str(item.asset_id) == str(asset_id)
+    assert item.watchlist_id == watchlist_id
+    assert item.asset_id == asset_id
     assert item.notes == 'Test notes'
     
     # Test to_dict
