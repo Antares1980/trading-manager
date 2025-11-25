@@ -2,53 +2,35 @@
 Signal model for storing trading signals generated from technical analysis.
 """
 
-from sqlalchemy import Column, BigInteger, String, DateTime, ForeignKey, Numeric, Index, Enum as SQLEnum, Text
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Numeric, Index, Text
+from sqlalchemy.orm import relationship
 from backend.db import Base
 from datetime import datetime, timezone
-import enum
-
-
-class SignalType(enum.Enum):
-    """Enumeration of signal types."""
-    BUY = 'buy'
-    SELL = 'sell'
-    HOLD = 'hold'
-    STRONG_BUY = 'strong_buy'
-    STRONG_SELL = 'strong_sell'
-
-
-class SignalStrength(enum.Enum):
-    """Enumeration of signal strength levels."""
-    WEAK = 'weak'
-    MODERATE = 'moderate'
-    STRONG = 'strong'
 
 
 class Signal(Base):
     """
     Signal model for storing trading signals.
     
-    Uses bigserial as primary key for time-series efficiency.
     Stores signals with their rationale and confidence for transparency.
     All timestamps are stored in UTC.
     """
     
     __tablename__ = 'signals'
     
-    # Primary key - bigserial for time-series efficiency
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    # Primary key
+    id = Column(Integer, primary_key=True, autoincrement=True)
     
     # Foreign key to asset
-    asset_id = Column(UUID(as_uuid=True), ForeignKey('assets.id', ondelete='CASCADE'), 
+    asset_id = Column(String(36), ForeignKey('assets.id', ondelete='CASCADE'), 
                      nullable=False, index=True)
     
     # Time data (UTC)
     ts = Column(DateTime, nullable=False, index=True)  # Timestamp of the signal
     
     # Signal details
-    signal_type = Column(SQLEnum(SignalType), nullable=False)
-    strength = Column(SQLEnum(SignalStrength), default=SignalStrength.MODERATE)
+    signal_type = Column(String(20), nullable=False)
+    strength = Column(String(20), default='moderate')
     confidence = Column(Numeric(precision=5, scale=2))  # 0-100 confidence score
     
     # Price context
@@ -59,7 +41,7 @@ class Signal(Base):
     # Signal rationale
     strategy = Column(String(100))  # Strategy name that generated the signal
     rationale = Column(Text)  # Human-readable explanation
-    indicators_used = Column(JSONB, default=list)  # List of indicators used
+    indicators_used = Column(Text, default='[]')  # List of indicators used (JSON string)
     
     # Metadata
     timeframe = Column(String(10), default='1d')  # Timeframe analyzed
@@ -80,10 +62,10 @@ class Signal(Base):
         """Convert signal to dictionary."""
         data = {
             'id': self.id,
-            'asset_id': str(self.asset_id),
+            'asset_id': self.asset_id,
             'ts': self.ts.isoformat() if self.ts else None,
-            'signal_type': self.signal_type.value if self.signal_type else None,
-            'strength': self.strength.value if self.strength else None,
+            'signal_type': self.signal_type,
+            'strength': self.strength,
             'confidence': float(self.confidence) if self.confidence is not None else None,
             'price': float(self.price) if self.price is not None else None,
             'target_price': float(self.target_price) if self.target_price is not None else None,
@@ -104,4 +86,4 @@ class Signal(Base):
         return data
     
     def __repr__(self):
-        return f'<Signal {self.signal_type.value if self.signal_type else "?"} for {self.asset_id} @ {self.ts}>'
+        return f'<Signal {self.signal_type} for {self.asset_id} @ {self.ts}>'

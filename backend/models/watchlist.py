@@ -3,7 +3,6 @@ Watchlist model for organizing user's asset collections.
 """
 
 from sqlalchemy import Column, String, DateTime, ForeignKey, Text
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from backend.db import Base
 from datetime import datetime, timezone
@@ -22,10 +21,10 @@ class Watchlist(Base):
     __tablename__ = 'watchlists'
     
     # Primary key
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     
     # Foreign key to user
-    user_id = Column(UUID(as_uuid=True), ForeignKey('users.id', ondelete='CASCADE'), 
+    user_id = Column(String(36), ForeignKey('users.id', ondelete='CASCADE'), 
                     nullable=False, index=True)
     
     # Watchlist info
@@ -50,8 +49,8 @@ class Watchlist(Base):
     def to_dict(self, include_items=False, include_timestamps=True):
         """Convert watchlist to dictionary."""
         data = {
-            'id': str(self.id),
-            'user_id': str(self.user_id),
+            'id': self.id,
+            'user_id': self.user_id,
             'name': self.name,
             'description': self.description,
             'color': self.color,

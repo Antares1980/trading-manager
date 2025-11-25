@@ -2,29 +2,18 @@
 Asset model for storing information about tradeable securities.
 """
 
-from sqlalchemy import Column, String, DateTime, Text, Enum as SQLEnum
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import Column, String, DateTime, Text, Integer
 from sqlalchemy.orm import relationship
 from backend.db import Base
 from datetime import datetime, timezone
 import uuid
-import enum
-
-
-class AssetType(enum.Enum):
-    """Enumeration of asset types."""
-    STOCK = 'stock'
-    ETF = 'etf'
-    CRYPTO = 'crypto'
-    FOREX = 'forex'
-    COMMODITY = 'commodity'
 
 
 class Asset(Base):
     """
     Asset model for storing tradeable securities information.
     
-    Uses UUID as primary key for user-facing resources.
+    Uses string UUID as primary key for user-facing resources.
     Supports multiple asset types (stocks, ETFs, crypto, etc.).
     All timestamps are stored in UTC.
     """
@@ -32,20 +21,20 @@ class Asset(Base):
     __tablename__ = 'assets'
     
     # Primary key
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     
     # Asset identification
     symbol = Column(String(20), unique=True, nullable=False, index=True)
     name = Column(String(200), nullable=False)
-    asset_type = Column(SQLEnum(AssetType), nullable=False, default=AssetType.STOCK)
+    asset_type = Column(String(20), nullable=False, default='stock')
     
     # Asset details
     exchange = Column(String(50))
     currency = Column(String(10), default='USD')
     description = Column(Text)
     
-    # Metadata stored as JSON
-    metadata = Column(JSONB, default=dict)
+    # Metadata stored as JSON string
+    asset_metadata = Column(Text, default='{}')
     
     # Trading information
     is_active = Column(String(10), default='true')  # Can be traded
@@ -65,10 +54,10 @@ class Asset(Base):
     def to_dict(self, include_timestamps=True):
         """Convert asset to dictionary."""
         data = {
-            'id': str(self.id),
+            'id': self.id,
             'symbol': self.symbol,
             'name': self.name,
-            'asset_type': self.asset_type.value if self.asset_type else None,
+            'asset_type': self.asset_type,
             'exchange': self.exchange,
             'currency': self.currency,
             'description': self.description,
@@ -76,7 +65,7 @@ class Asset(Base):
             'market_cap': self.market_cap,
             'sector': self.sector,
             'industry': self.industry,
-            'metadata': self.metadata,
+            'metadata': self.asset_metadata,
         }
         
         if include_timestamps:
@@ -88,4 +77,4 @@ class Asset(Base):
         return data
     
     def __repr__(self):
-        return f'<Asset {self.symbol} ({self.asset_type.value if self.asset_type else "unknown"})>'
+        return f'<Asset {self.symbol} ({self.asset_type})>'

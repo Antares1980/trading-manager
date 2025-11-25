@@ -3,7 +3,6 @@ WatchlistItem model for the many-to-many relationship between watchlists and ass
 """
 
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, UniqueConstraint
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from backend.db import Base
 from datetime import datetime, timezone
@@ -23,12 +22,12 @@ class WatchlistItem(Base):
     __tablename__ = 'watchlist_items'
     
     # Primary key
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     
     # Foreign keys
-    watchlist_id = Column(UUID(as_uuid=True), ForeignKey('watchlists.id', ondelete='CASCADE'), 
+    watchlist_id = Column(String(36), ForeignKey('watchlists.id', ondelete='CASCADE'), 
                          nullable=False, index=True)
-    asset_id = Column(UUID(as_uuid=True), ForeignKey('assets.id', ondelete='CASCADE'), 
+    asset_id = Column(String(36), ForeignKey('assets.id', ondelete='CASCADE'), 
                      nullable=False, index=True)
     
     # Item metadata
@@ -56,9 +55,9 @@ class WatchlistItem(Base):
     def to_dict(self, include_asset=False, include_timestamps=True):
         """Convert watchlist item to dictionary."""
         data = {
-            'id': str(self.id),
-            'watchlist_id': str(self.watchlist_id),
-            'asset_id': str(self.asset_id),
+            'id': self.id,
+            'watchlist_id': self.watchlist_id,
+            'asset_id': self.asset_id,
             'position': self.position,
             'notes': self.notes,
             'price_alert_high': self.price_alert_high,

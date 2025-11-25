@@ -3,7 +3,6 @@ User model for authentication and user management.
 """
 
 from sqlalchemy import Column, String, Boolean, DateTime
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from backend.db import Base
 from datetime import datetime, timezone
@@ -23,7 +22,7 @@ class User(Base):
     __tablename__ = 'users'
     
     # Primary key
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     
     # User credentials
     username = Column(String(80), unique=True, nullable=False, index=True)
@@ -61,7 +60,7 @@ class User(Base):
     def to_dict(self, include_timestamps=True):
         """Convert user to dictionary (excludes password)."""
         data = {
-            'id': str(self.id),
+            'id': self.id,
             'username': self.username,
             'email': self.email,
             'full_name': self.full_name,

@@ -4,25 +4,10 @@ Candle model for storing OHLCV (candlestick) data.
 This table is designed as a TimescaleDB hypertable for efficient time-series storage.
 """
 
-from sqlalchemy import Column, BigInteger, String, DateTime, ForeignKey, Numeric, Index, Enum as SQLEnum
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Numeric, Index
 from sqlalchemy.orm import relationship
 from backend.db import Base
 from datetime import datetime, timezone
-import enum
-
-
-class CandleInterval(enum.Enum):
-    """Enumeration of supported candle intervals."""
-    MIN_1 = '1m'
-    MIN_5 = '5m'
-    MIN_15 = '15m'
-    MIN_30 = '30m'
-    HOUR_1 = '1h'
-    HOUR_4 = '4h'
-    DAY_1 = '1d'
-    WEEK_1 = '1w'
-    MONTH_1 = '1M'
 
 
 class Candle(Base):
@@ -39,16 +24,16 @@ class Candle(Base):
     
     __tablename__ = 'candles'
     
-    # Primary key - bigserial for time-series efficiency
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    # Primary key - integer for SQLite compatibility
+    id = Column(Integer, primary_key=True, autoincrement=True)
     
     # Foreign key to asset
-    asset_id = Column(UUID(as_uuid=True), ForeignKey('assets.id', ondelete='CASCADE'), 
+    asset_id = Column(String(36), ForeignKey('assets.id', ondelete='CASCADE'), 
                      nullable=False, index=True)
     
     # Time data (UTC)
-    ts = Column(DateTime, nullable=False, index=True)  # Timestamp - used for hypertable partitioning
-    interval = Column(SQLEnum(CandleInterval), nullable=False, default=CandleInterval.DAY_1)
+    ts = Column(DateTime, nullable=False, index=True)  # Timestamp
+    interval = Column(String(10), nullable=False, default='1d')
     
     # OHLCV data
     open = Column(Numeric(precision=20, scale=8), nullable=False)
@@ -58,7 +43,7 @@ class Candle(Base):
     volume = Column(Numeric(precision=30, scale=8), nullable=False, default=0)
     
     # Additional trading metrics
-    trades = Column(BigInteger)  # Number of trades
+    trades = Column(Integer)  # Number of trades
     vwap = Column(Numeric(precision=20, scale=8))  # Volume-weighted average price
     
     # Data source tracking
@@ -81,9 +66,9 @@ class Candle(Base):
         """Convert candle to dictionary."""
         data = {
             'id': self.id,
-            'asset_id': str(self.asset_id),
+            'asset_id': self.asset_id,
             'ts': self.ts.isoformat() if self.ts else None,
-            'interval': self.interval.value if self.interval else None,
+            'interval': self.interval,
             'open': float(self.open) if self.open is not None else None,
             'high': float(self.high) if self.high is not None else None,
             'low': float(self.low) if self.low is not None else None,
@@ -100,4 +85,4 @@ class Candle(Base):
         return data
     
     def __repr__(self):
-        return f'<Candle {self.asset_id} @ {self.ts} [{self.interval.value if self.interval else "?"}]>'
+        return f'<Candle {self.asset_id} @ {self.ts} [{self.interval}]>'
