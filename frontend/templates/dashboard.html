@@ -332,6 +332,260 @@
                 display: none;
             }
         }
+        
+        /* Asset Search Section */
+        .search-section {
+            background-color: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+        }
+        
+        .search-section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+        
+        .search-form {
+            display: flex;
+            gap: 1rem;
+            position: relative;
+        }
+        
+        .search-form input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+        
+        .search-form input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: var(--shadow-lg);
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 100;
+            display: none;
+            margin-top: 0.5rem;
+        }
+        
+        .search-results.visible {
+            display: block;
+        }
+        
+        .search-result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.2s;
+        }
+        
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+        
+        .search-result-item:hover {
+            background-color: var(--bg-color);
+        }
+        
+        .search-result-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .search-result-symbol {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .search-result-name {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+        
+        .search-no-results {
+            padding: 1rem;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+        
+        .search-loading {
+            padding: 1rem;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+        
+        /* Button styles */
+        .btn-add {
+            background-color: var(--success-color);
+            color: white;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        
+        .btn-add:hover {
+            background-color: #0d9669;
+        }
+        
+        .btn-add:disabled {
+            background-color: var(--secondary-color);
+            cursor: not-allowed;
+        }
+        
+        .btn-remove {
+            background-color: transparent;
+            color: var(--danger-color);
+            border: 1px solid var(--danger-color);
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .btn-remove:hover {
+            background-color: var(--danger-color);
+            color: white;
+        }
+        
+        /* Toast notification */
+        .toast-container {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 1000;
+        }
+        
+        .toast {
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: var(--shadow-lg);
+            margin-top: 0.5rem;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        .toast.success {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        .toast.error {
+            background-color: var(--danger-color);
+            color: white;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        /* Confirmation modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal-overlay.hidden {
+            display: none;
+        }
+        
+        .modal-box {
+            background-color: var(--card-bg);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            max-width: 400px;
+            width: 90%;
+        }
+        
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+        
+        .modal-message {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+        }
+        
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+        
+        .btn-cancel {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+        
+        .btn-danger:hover {
+            background-color: #dc2626;
+        }
+        
+        /* Actions column */
+        .asset-table th.actions-col,
+        .asset-table td.actions-col {
+            text-align: center;
+            width: 80px;
+        }
     </style>
 </head>
 <body>
@@ -410,6 +664,15 @@
                     </div>
                 </div>
 
+                <!-- Asset Search Section -->
+                <div class="search-section">
+                    <div class="search-section-title">Add Asset to Watchlist</div>
+                    <div class="search-form" id="search-form">
+                        <input type="text" id="asset-search" placeholder="Search by symbol or name (e.g., AAPL, Apple)" autocomplete="off">
+                        <div id="search-results" class="search-results"></div>
+                    </div>
+                </div>
+
                 <!-- Asset Table -->
                 <div class="table-container">
                     <div class="table-header">
@@ -425,6 +688,7 @@
                                 <th data-sort="change_1m">1M</th>
                                 <th data-sort="change_1y">1Y</th>
                                 <th>Trend</th>
+                                <th class="actions-col">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="asset-tbody">
@@ -449,12 +713,30 @@
         </footer>
     </div>
 
+    <!-- Confirmation Modal -->
+    <div id="confirm-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <div class="modal-title">Confirm Removal</div>
+            <div id="confirm-message" class="modal-message">Are you sure you want to remove this asset from your watchlist?</div>
+            <div class="modal-actions">
+                <button id="confirm-cancel" class="btn-cancel">Cancel</button>
+                <button id="confirm-remove" class="btn-danger">Remove</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
     <script>
         // Dashboard JavaScript
         const API_BASE = window.location.origin;
         let authToken = null;
         let assetsData = [];
         let currentSort = { column: 'symbol', direction: 'asc' };
+        let currentWatchlistId = null;
+        let searchTimeout = null;
+        let pendingRemoval = null;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
@@ -511,6 +793,199 @@
             document.querySelectorAll('.asset-table th[data-sort]').forEach(th => {
                 th.addEventListener('click', () => sortTable(th.dataset.sort));
             });
+            
+            // Setup search functionality
+            const searchInput = document.getElementById('asset-search');
+            searchInput.addEventListener('input', handleSearchInput);
+            searchInput.addEventListener('focus', () => {
+                if (searchInput.value.trim().length >= 1) {
+                    document.getElementById('search-results').classList.add('visible');
+                }
+            });
+            
+            // Hide search results when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('#search-form')) {
+                    document.getElementById('search-results').classList.remove('visible');
+                }
+            });
+            
+            // Setup confirmation modal
+            document.getElementById('confirm-cancel').addEventListener('click', closeConfirmModal);
+            document.getElementById('confirm-remove').addEventListener('click', confirmRemoveAsset);
+        }
+
+        function handleSearchInput(e) {
+            const query = e.target.value.trim();
+            const resultsContainer = document.getElementById('search-results');
+            
+            if (query.length < 1) {
+                resultsContainer.classList.remove('visible');
+                return;
+            }
+            
+            // Debounce search
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => searchAssets(query), 300);
+        }
+
+        function searchAssets(query) {
+            const resultsContainer = document.getElementById('search-results');
+            resultsContainer.innerHTML = '<div class="search-loading">Searching...</div>';
+            resultsContainer.classList.add('visible');
+            
+            fetch(`${API_BASE}/api/assets/?search=${encodeURIComponent(query)}&limit=10`, {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                displaySearchResults(data.assets || []);
+            })
+            .catch(error => {
+                resultsContainer.innerHTML = '<div class="search-no-results">Error searching assets</div>';
+            });
+        }
+
+        function displaySearchResults(assets) {
+            const resultsContainer = document.getElementById('search-results');
+            
+            if (assets.length === 0) {
+                resultsContainer.innerHTML = '<div class="search-no-results">No assets found</div>';
+                return;
+            }
+            
+            // Get current watchlist asset IDs to check for duplicates
+            const currentAssetIds = assetsData.map(a => a.asset_id);
+            
+            resultsContainer.innerHTML = assets.map(asset => {
+                const isInWatchlist = currentAssetIds.includes(asset.id);
+                return `
+                    <div class="search-result-item">
+                        <div class="search-result-info">
+                            <span class="search-result-symbol">${escapeHtml(asset.symbol)}</span>
+                            <span class="search-result-name">${escapeHtml(asset.name)}</span>
+                        </div>
+                        <button class="btn-add" 
+                                onclick="addAssetToWatchlist('${asset.id}', '${escapeHtml(asset.symbol)}')"
+                                ${isInWatchlist ? 'disabled' : ''}>
+                            ${isInWatchlist ? 'Added' : 'Add'}
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        async function addAssetToWatchlist(assetId, symbol) {
+            // Get or create default watchlist if not loaded
+            if (!currentWatchlistId) {
+                try {
+                    const response = await fetch(`${API_BASE}/api/dashboard/default-watchlist`, {
+                        headers: {
+                            'Authorization': `Bearer ${authToken}`
+                        }
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        currentWatchlistId = data.watchlist.id;
+                    } else {
+                        showToast('Failed to get watchlist', 'error');
+                        return;
+                    }
+                } catch (error) {
+                    showToast('Failed to get watchlist', 'error');
+                    return;
+                }
+            }
+            
+            // Add asset to watchlist
+            try {
+                const response = await fetch(`${API_BASE}/api/watchlists/${currentWatchlistId}/items`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ asset_id: assetId })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showToast(`${symbol} added to watchlist`, 'success');
+                    // Clear search and refresh dashboard
+                    document.getElementById('asset-search').value = '';
+                    document.getElementById('search-results').classList.remove('visible');
+                    loadDashboard();
+                } else if (response.status === 409) {
+                    showToast(`${symbol} is already in your watchlist`, 'error');
+                } else {
+                    showToast(data.error || 'Failed to add asset', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to add asset', 'error');
+            }
+        }
+
+        function promptRemoveAsset(watchlistItemId, symbol) {
+            pendingRemoval = { watchlistItemId, symbol };
+            document.getElementById('confirm-message').textContent = 
+                `Are you sure you want to remove ${symbol} from your watchlist?`;
+            document.getElementById('confirm-modal').classList.remove('hidden');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirm-modal').classList.add('hidden');
+            pendingRemoval = null;
+        }
+
+        async function confirmRemoveAsset() {
+            if (!pendingRemoval) return;
+            
+            const { watchlistItemId, symbol } = pendingRemoval;
+            closeConfirmModal();
+            
+            try {
+                const response = await fetch(
+                    `${API_BASE}/api/watchlists/${currentWatchlistId}/items/${watchlistItemId}`, 
+                    {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${authToken}`
+                        }
+                    }
+                );
+                
+                if (response.ok) {
+                    showToast(`${symbol} removed from watchlist`, 'success');
+                    loadDashboard();
+                } else {
+                    const data = await response.json();
+                    showToast(data.error || 'Failed to remove asset', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to remove asset', 'error');
+            }
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            
+            // Remove toast after 3 seconds
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
         }
 
         function loadDashboard() {
@@ -539,8 +1014,9 @@
         function displayDashboard(data) {
             document.getElementById('dashboard-content').style.display = 'block';
             
-            // Update watchlist info
+            // Store watchlist ID for add/remove operations
             if (data.watchlist_info) {
+                currentWatchlistId = data.watchlist_info.id;
                 document.getElementById('watchlist-name').textContent = `- ${data.watchlist_info.name}`;
             }
             
@@ -561,11 +1037,14 @@
             // Update stats
             updateStats(assetsData);
             
-            // Show empty state if no assets
+            // Show/hide table and empty state
             if (assetsData.length === 0) {
                 document.getElementById('empty-state').style.display = 'block';
                 document.getElementById('asset-table').parentElement.style.display = 'none';
                 document.getElementById('empty-message').textContent = data.message || 'Add assets to your watchlist.';
+            } else {
+                document.getElementById('empty-state').style.display = 'none';
+                document.getElementById('asset-table').parentElement.style.display = 'block';
             }
         }
 
@@ -624,21 +1103,25 @@
             
             sorted.forEach(asset => {
                 const tr = document.createElement('tr');
-                tr.onclick = () => window.location.href = `/asset/${asset.symbol}`;
                 
                 tr.innerHTML = `
-                    <td>
+                    <td onclick="window.location.href='/asset/${escapeHtml(asset.symbol)}'">
                         <div class="asset-info">
-                            <span class="asset-symbol">${asset.symbol}</span>
-                            <span class="asset-name">${asset.name}</span>
+                            <span class="asset-symbol">${escapeHtml(asset.symbol)}</span>
+                            <span class="asset-name">${escapeHtml(asset.name)}</span>
                         </div>
                     </td>
-                    <td class="price">$${asset.last_price !== null ? asset.last_price.toFixed(2) : 'N/A'}</td>
-                    <td>${formatChange(asset.change_1d)}</td>
-                    <td>${formatChange(asset.change_1w)}</td>
-                    <td>${formatChange(asset.change_1m)}</td>
-                    <td>${formatChange(asset.change_1y)}</td>
-                    <td>${createSparkline(asset.sparkline, asset.change_1m)}</td>
+                    <td class="price" onclick="window.location.href='/asset/${escapeHtml(asset.symbol)}'">$${asset.last_price !== null ? asset.last_price.toFixed(2) : 'N/A'}</td>
+                    <td onclick="window.location.href='/asset/${escapeHtml(asset.symbol)}'">${formatChange(asset.change_1d)}</td>
+                    <td onclick="window.location.href='/asset/${escapeHtml(asset.symbol)}'">${formatChange(asset.change_1w)}</td>
+                    <td onclick="window.location.href='/asset/${escapeHtml(asset.symbol)}'">${formatChange(asset.change_1m)}</td>
+                    <td onclick="window.location.href='/asset/${escapeHtml(asset.symbol)}'">${formatChange(asset.change_1y)}</td>
+                    <td onclick="window.location.href='/asset/${escapeHtml(asset.symbol)}'">${createSparkline(asset.sparkline, asset.change_1m)}</td>
+                    <td class="actions-col">
+                        <button class="btn-remove" onclick="event.stopPropagation(); promptRemoveAsset('${asset.watchlist_item_id}', '${escapeHtml(asset.symbol)}')">
+                            Remove
+                        </button>
+                    </td>
                 `;
                 
                 tbody.appendChild(tr);

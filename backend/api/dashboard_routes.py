@@ -151,6 +151,8 @@ def get_watchlist_summary():
                 if not latest_candle:
                     # No candle data available
                     assets_data.append({
+                        'asset_id': asset.id,
+                        'watchlist_item_id': item.id,
                         'symbol': asset.symbol,
                         'name': asset.name,
                         'asset_type': asset.asset_type,
@@ -188,6 +190,8 @@ def get_watchlist_summary():
                     normalized_values.append(normalized_value)
                 
                 assets_data.append({
+                    'asset_id': asset.id,
+                    'watchlist_item_id': item.id,
                     'symbol': asset.symbol,
                     'name': asset.name,
                     'asset_type': asset.asset_type,
@@ -269,4 +273,58 @@ def get_quick_stats():
         return jsonify({
             'success': False,
             'error': 'Failed to retrieve quick stats'
+        }), 500
+
+
+@dashboard_bp.route('/default-watchlist', methods=['GET'])
+@jwt_required()
+def get_or_create_default_watchlist():
+    """
+    Get the user's default watchlist, creating one if it doesn't exist.
+    
+    Returns:
+        JSON with the default watchlist info
+    """
+    try:
+        user_id = get_jwt_identity()
+        
+        with session_scope() as session:
+            # Get user's default watchlist
+            watchlist = session.query(Watchlist).filter_by(
+                user_id=user_id,
+                is_default='true'
+            ).first()
+            
+            # If no default watchlist, get the first one
+            if not watchlist:
+                watchlist = session.query(Watchlist).filter_by(
+                    user_id=user_id
+                ).first()
+            
+            # If still no watchlist, create one
+            if not watchlist:
+                watchlist = Watchlist(
+                    user_id=user_id,
+                    name='My Watchlist',
+                    description='Default watchlist',
+                    is_default='true'
+                )
+                session.add(watchlist)
+                session.commit()
+            
+            return jsonify({
+                'success': True,
+                'watchlist': {
+                    'id': watchlist.id,
+                    'name': watchlist.name,
+                    'description': watchlist.description,
+                    'is_default': watchlist.is_default
+                }
+            }), 200
+    
+    except Exception as e:
+        logger.error(f"Error getting default watchlist: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': 'Failed to get default watchlist'
         }), 500

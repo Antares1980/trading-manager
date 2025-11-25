@@ -9,10 +9,13 @@ from flask_jwt_extended import jwt_required
 import logging
 
 from backend.db import session_scope
-from backend.models import Asset, AssetType
+from backend.models import Asset
 
 asset_bp = Blueprint('assets', __name__)
 logger = logging.getLogger(__name__)
+
+# Valid asset types
+VALID_ASSET_TYPES = ['stock', 'etf', 'crypto', 'index', 'forex', 'commodity', 'bond']
 
 
 @asset_bp.route('/', methods=['GET'])
@@ -40,10 +43,9 @@ def list_assets():
             
             # Apply filters
             if asset_type:
-                try:
-                    query = query.filter_by(asset_type=AssetType(asset_type))
-                except ValueError:
+                if asset_type not in VALID_ASSET_TYPES:
                     return jsonify({'error': 'Invalid asset type'}), 400
+                query = query.filter_by(asset_type=asset_type)
             
             if search:
                 search_term = f'%{search}%'
@@ -129,12 +131,11 @@ def create_asset():
                 return jsonify({'error': 'Asset with this symbol already exists'}), 409
             
             # Parse asset type
-            asset_type = AssetType.STOCK
+            asset_type = 'stock'
             if 'asset_type' in data:
-                try:
-                    asset_type = AssetType(data['asset_type'])
-                except ValueError:
+                if data['asset_type'] not in VALID_ASSET_TYPES:
                     return jsonify({'error': 'Invalid asset type'}), 400
+                asset_type = data['asset_type']
             
             # Create asset
             asset = Asset(
@@ -146,7 +147,7 @@ def create_asset():
                 description=data.get('description'),
                 sector=data.get('sector'),
                 industry=data.get('industry'),
-                metadata=data.get('metadata', {})
+                asset_metadata=data.get('metadata', '{}')
             )
             
             session.add(asset)
@@ -187,10 +188,9 @@ def update_asset(asset_id):
             if 'name' in data:
                 asset.name = data['name']
             if 'asset_type' in data:
-                try:
-                    asset.asset_type = AssetType(data['asset_type'])
-                except ValueError:
+                if data['asset_type'] not in VALID_ASSET_TYPES:
                     return jsonify({'error': 'Invalid asset type'}), 400
+                asset.asset_type = data['asset_type']
             if 'exchange' in data:
                 asset.exchange = data['exchange']
             if 'currency' in data:
@@ -204,7 +204,7 @@ def update_asset(asset_id):
             if 'is_active' in data:
                 asset.is_active = data['is_active']
             if 'metadata' in data:
-                asset.metadata = data['metadata']
+                asset.asset_metadata = data['metadata']
             
             session.commit()
             
