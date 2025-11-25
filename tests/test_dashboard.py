@@ -109,6 +109,151 @@ def test_dashboard_percentage_changes(client, auth_token):
                 assert -100 <= change <= 1000, f"Unreasonable {change_field}: {change}"
 
 
+def test_dashboard_percentage_changes_anchored_to_latest_candle(app):
+    """
+    Test that percentage changes are anchored to the latest candle timestamp,
+    not the current wall-clock time.
+    
+    This test creates controlled candle data at specific dates with known prices
+    to verify that percentage changes are computed correctly.
+    """
+    from backend.db import session_scope
+    from backend.models import User, Asset, Watchlist, WatchlistItem, Candle
+    from datetime import datetime, timezone, timedelta
+    
+    with app.app_context():
+        with session_scope() as session:
+            # Create a new test user for this isolated test
+            test_user = User(
+                username='pct_test_user',
+                email='pct_test@test.com',
+                full_name='Percentage Test User'
+            )
+            test_user.set_password('testpass123')
+            session.add(test_user)
+            session.flush()
+            
+            # Create test asset
+            test_asset = Asset(
+                symbol='PCTTEST',
+                name='Percentage Test Asset',
+                asset_type='stock',
+                exchange='TEST',
+                currency='USD',
+                is_active='true'
+            )
+            session.add(test_asset)
+            session.flush()
+            
+            # Create watchlist for test user
+            test_watchlist = Watchlist(
+                user_id=test_user.id,
+                name='Percentage Test Watchlist',
+                description='Test watchlist',
+                is_default='true'
+            )
+            session.add(test_watchlist)
+            session.flush()
+            
+            # Add asset to watchlist
+            test_item = WatchlistItem(
+                watchlist_id=test_watchlist.id,
+                asset_id=test_asset.id,
+                position=0
+            )
+            session.add(test_item)
+            session.flush()
+            
+            # Create candles with known prices at specific dates
+            # Latest candle: 7 days ago from "now" with close = 110
+            # 1 day before latest: close = 100 (10% change)
+            # 7 days before latest: close = 90 (~22.22% change)
+            
+            # Use a fixed anchor date in the past to simulate old data
+            anchor_date = datetime(2024, 6, 15, 0, 0, 0, tzinfo=timezone.utc)
+            
+            candles_data = [
+                # Latest candle (anchor)
+                (anchor_date, 110.0),
+                # 1 day before anchor
+                (anchor_date - timedelta(days=1), 100.0),
+                # 7 days before anchor
+                (anchor_date - timedelta(days=7), 90.0),
+                # 30 days before anchor  
+                (anchor_date - timedelta(days=30), 80.0),
+            ]
+            
+            for ts, close_price in candles_data:
+                candle = Candle(
+                    asset_id=test_asset.id,
+                    ts=ts,
+                    interval='1d',
+                    open=close_price * 0.99,
+                    high=close_price * 1.01,
+                    low=close_price * 0.98,
+                    close=close_price,
+                    volume=1000000,
+                    source='test_anchored'
+                )
+                session.add(candle)
+            
+            session.commit()
+            
+            # Get user ID for API call
+            user_id = test_user.id
+        
+        # Now make API call as the test user
+        client = app.test_client()
+        
+        # Login as test user
+        response = client.post('/api/auth/login', json={
+            'username': 'pct_test_user',
+            'password': 'testpass123'
+        })
+        assert response.status_code == 200
+        token = response.json.get('token')
+        
+        # Get watchlist summary
+        response = client.get(
+            '/api/dashboard/watchlist-summary',
+            headers={'Authorization': f'Bearer {token}'}
+        )
+        assert response.status_code == 200
+        
+        data = response.json
+        assets = data.get('assets', [])
+        
+        # Find our test asset
+        test_asset_data = None
+        for asset in assets:
+            if asset['symbol'] == 'PCTTEST':
+                test_asset_data = asset
+                break
+        
+        assert test_asset_data is not None, "Test asset not found in response"
+        
+        # Verify price
+        assert test_asset_data['last_price'] == 110.0
+        
+        # Verify 1D change: (110 - 100) / 100 * 100 = 10%
+        assert test_asset_data['change_1d'] == 10.0, \
+            f"Expected 1D change of 10%, got {test_asset_data['change_1d']}"
+        
+        # Verify 1W change: (110 - 90) / 90 * 100 = 22.22%
+        expected_1w_change = round((110 - 90) / 90 * 100, 2)
+        assert test_asset_data['change_1w'] == expected_1w_change, \
+            f"Expected 1W change of {expected_1w_change}%, got {test_asset_data['change_1w']}"
+        
+        # Verify 1M change: (110 - 80) / 80 * 100 = 37.5%
+        expected_1m_change = round((110 - 80) / 80 * 100, 2)
+        assert test_asset_data['change_1m'] == expected_1m_change, \
+            f"Expected 1M change of {expected_1m_change}%, got {test_asset_data['change_1m']}"
+        
+        # 1Y change should be None (no data 365 days back)
+        assert test_asset_data['change_1y'] is None, \
+            f"Expected 1Y change to be None, got {test_asset_data['change_1y']}"
+
+
 def test_dashboard_watchlist_index(client, auth_token):
     """Test that watchlist index is calculated."""
     response = client.get(
