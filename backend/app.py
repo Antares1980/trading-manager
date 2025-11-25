@@ -18,7 +18,7 @@ from flask.json.provider import DefaultJSONProvider
 import math
 
 # Import configuration
-from backend.config import get_config
+from backend.settings import get_config
 
 # Import database utilities
 from backend.db import init_db, close_db, get_session, Base
@@ -125,6 +125,12 @@ def create_app(config_name=None):
     except ImportError:
         logger.warning("Signal routes not found, skipping")
     
+    try:
+        from backend.api.dashboard_routes import dashboard_bp
+        app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
+    except ImportError:
+        logger.warning("Dashboard routes not found, skipping")
+    
     # Health check endpoint
     @app.route('/health')
     def health():
@@ -144,6 +150,19 @@ def create_app(config_name=None):
     def index():
         from flask import render_template
         return render_template('index.html')
+    
+    @app.route('/dashboard')
+    def dashboard():
+        """Serve the dashboard page."""
+        from flask import render_template
+        return render_template('dashboard.html')
+    
+    @app.route('/asset/<symbol>')
+    def asset_detail(symbol):
+        """Serve the asset detail page (redirects to index with ticker)."""
+        from flask import render_template, redirect, url_for
+        # For now, redirect to index - could be a separate page later
+        return redirect(url_for('index') + f'?ticker={symbol}')
     
     # Cleanup on shutdown
     @app.teardown_appcontext

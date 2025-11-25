@@ -11,7 +11,7 @@ from datetime import datetime, timezone, timedelta
 from backend.tasks import celery_app
 from backend.db import init_db, session_scope
 from backend.models import Asset, Indicator, Signal, SignalType, SignalStrength
-from backend.config import get_config
+from backend.settings import get_config
 
 logger = logging.getLogger(__name__)
 

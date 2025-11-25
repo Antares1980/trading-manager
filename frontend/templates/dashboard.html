@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Trading Manager</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* Dashboard-specific styles */
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        
+        .dashboard-title {
+            font-size: 1.75rem;
+            color: var(--primary-color);
+        }
+        
+        .watchlist-name {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            margin-left: 1rem;
+        }
+        
+        /* Watchlist Index Card */
+        .index-card {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #1d4ed8 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .index-value {
+            font-size: 3rem;
+            font-weight: 700;
+        }
+        
+        .index-label {
+            font-size: 1rem;
+            opacity: 0.9;
+            margin-bottom: 0.5rem;
+        }
+        
+        .index-description {
+            font-size: 0.875rem;
+            opacity: 0.8;
+        }
+        
+        .index-gauge {
+            width: 120px;
+            height: 120px;
+            position: relative;
+        }
+        
+        .gauge-background {
+            fill: none;
+            stroke: rgba(255,255,255,0.2);
+            stroke-width: 10;
+        }
+        
+        .gauge-fill {
+            fill: none;
+            stroke: white;
+            stroke-width: 10;
+            stroke-linecap: round;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+            transition: stroke-dashoffset 1s ease-out;
+        }
+        
+        /* Asset Table */
+        .table-container {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+        
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .table-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+        
+        .asset-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .asset-table th {
+            text-align: left;
+            padding: 1rem 1.5rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.2s;
+        }
+        
+        .asset-table th:hover {
+            background-color: var(--bg-color);
+        }
+        
+        .asset-table th.sorted-asc::after {
+            content: ' ▲';
+            font-size: 0.75rem;
+        }
+        
+        .asset-table th.sorted-desc::after {
+            content: ' ▼';
+            font-size: 0.75rem;
+        }
+        
+        .asset-table tbody tr {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .asset-table tbody tr:hover {
+            background-color: var(--bg-color);
+        }
+        
+        .asset-table td {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .asset-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        
+        /* Asset symbol and name */
+        .asset-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .asset-symbol {
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--text-primary);
+        }
+        
+        .asset-name {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        /* Price display */
+        .price {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        
+        /* Percentage change indicators */
+        .change {
+            font-weight: 600;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            display: inline-block;
+            font-size: 0.875rem;
+        }
+        
+        .change.positive {
+            color: var(--success-color);
+            background-color: rgba(16, 185, 129, 0.1);
+        }
+        
+        .change.negative {
+            color: var(--danger-color);
+            background-color: rgba(239, 68, 68, 0.1);
+        }
+        
+        .change.neutral {
+            color: var(--text-secondary);
+            background-color: var(--bg-color);
+        }
+        
+        /* Sparkline */
+        .sparkline-container {
+            width: 100px;
+            height: 30px;
+        }
+        
+        .sparkline {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .sparkline-line {
+            fill: none;
+            stroke-width: 1.5;
+        }
+        
+        .sparkline-line.positive {
+            stroke: var(--success-color);
+        }
+        
+        .sparkline-line.negative {
+            stroke: var(--danger-color);
+        }
+        
+        .sparkline-line.neutral {
+            stroke: var(--text-secondary);
+        }
+        
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+        
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        
+        .empty-state-title {
+            font-size: 1.5rem;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .empty-state-description {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+        }
+        
+        /* Progress bar for percentage */
+        .progress-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .progress-bar {
+            width: 60px;
+            height: 6px;
+            background-color: var(--bg-color);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s ease-out;
+        }
+        
+        .progress-fill.positive {
+            background-color: var(--success-color);
+        }
+        
+        .progress-fill.negative {
+            background-color: var(--danger-color);
+        }
+        
+        /* Stats row */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background-color: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+        }
+        
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .asset-table th:nth-child(5),
+            .asset-table td:nth-child(5),
+            .asset-table th:nth-child(6),
+            .asset-table td:nth-child(6) {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .index-card {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .index-gauge {
+                margin-top: 1.5rem;
+            }
+            
+            .asset-table th:nth-child(4),
+            .asset-table td:nth-child(4),
+            .asset-table th:nth-child(7),
+            .asset-table td:nth-child(7) {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <a href="/" style="text-decoration: none; color: inherit;">
+                    <h1>📈 Trading Manager</h1>
+                </a>
+            </div>
+            <nav class="nav">
+                <div id="auth-section">
+                    <button id="login-btn" class="btn btn-primary" style="display: none;">Login</button>
+                    <div id="user-info" class="user-info">
+                        <span id="username"></span>
+                        <button id="logout-btn" class="btn btn-secondary">Logout</button>
+                    </div>
+                </div>
+            </nav>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Loading State -->
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <p>Loading dashboard...</p>
+            </div>
+
+            <!-- Error Message -->
+            <div id="error-message" class="error-message" style="display: none;"></div>
+
+            <!-- Dashboard Content (hidden until loaded) -->
+            <div id="dashboard-content" style="display: none;">
+                <!-- Dashboard Header -->
+                <div class="dashboard-header">
+                    <div>
+                        <span class="dashboard-title">Dashboard</span>
+                        <span id="watchlist-name" class="watchlist-name"></span>
+                    </div>
+                    <div>
+                        <span id="last-updated" style="color: var(--text-secondary); font-size: 0.875rem;"></span>
+                    </div>
+                </div>
+
+                <!-- Watchlist Index Card -->
+                <div id="index-card" class="index-card">
+                    <div>
+                        <div class="index-label">Watchlist Index</div>
+                        <div id="index-value" class="index-value">--</div>
+                        <div class="index-description">Normalized to 200-day moving average (100 = fair value)</div>
+                    </div>
+                    <div class="index-gauge">
+                        <svg viewBox="0 0 120 120">
+                            <circle class="gauge-background" cx="60" cy="60" r="50"></circle>
+                            <circle id="gauge-fill" class="gauge-fill" cx="60" cy="60" r="50" 
+                                    stroke-dasharray="314" stroke-dashoffset="314"></circle>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Stats Row -->
+                <div class="stats-row">
+                    <div class="stat-card">
+                        <div class="stat-label">Total Assets</div>
+                        <div id="total-assets" class="stat-value">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Gainers (1D)</div>
+                        <div id="gainers-count" class="stat-value" style="color: var(--success-color);">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Losers (1D)</div>
+                        <div id="losers-count" class="stat-value" style="color: var(--danger-color);">0</div>
+                    </div>
+                </div>
+
+                <!-- Asset Table -->
+                <div class="table-container">
+                    <div class="table-header">
+                        <span class="table-title">Watchlist Assets</span>
+                    </div>
+                    <table class="asset-table" id="asset-table">
+                        <thead>
+                            <tr>
+                                <th data-sort="symbol">Symbol</th>
+                                <th data-sort="last_price">Price</th>
+                                <th data-sort="change_1d">1D</th>
+                                <th data-sort="change_1w">1W</th>
+                                <th data-sort="change_1m">1M</th>
+                                <th data-sort="change_1y">1Y</th>
+                                <th>Trend</th>
+                            </tr>
+                        </thead>
+                        <tbody id="asset-tbody">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Empty State -->
+                <div id="empty-state" class="empty-state" style="display: none;">
+                    <div class="empty-state-icon">📊</div>
+                    <h2 class="empty-state-title">No Assets Yet</h2>
+                    <p id="empty-message" class="empty-state-description">Add assets to your watchlist to see them here.</p>
+                    <a href="/" class="btn btn-primary">Browse Assets</a>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; 2024 Trading Manager. For educational purposes only. Not financial advice.</p>
+        </footer>
+    </div>
+
+    <script>
+        // Dashboard JavaScript
+        const API_BASE = window.location.origin;
+        let authToken = null;
+        let assetsData = [];
+        let currentSort = { column: 'symbol', direction: 'asc' };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeAuth();
+            setupEventListeners();
+        });
+
+        function initializeAuth() {
+            authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                // Redirect to home page for login
+                window.location.href = '/';
+                return;
+            }
+            
+            // Verify token and load dashboard
+            verifyTokenAndLoad();
+        }
+
+        function verifyTokenAndLoad() {
+            fetch(`${API_BASE}/api/auth/verify`, {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.valid) {
+                    showUserInfo(data.user);
+                    loadDashboard();
+                } else {
+                    logout();
+                }
+            })
+            .catch(() => logout());
+        }
+
+        function showUserInfo(user) {
+            document.getElementById('login-btn').style.display = 'none';
+            document.getElementById('user-info').style.display = 'flex';
+            document.getElementById('username').textContent = user.username;
+        }
+
+        function logout() {
+            authToken = null;
+            localStorage.removeItem('authToken');
+            window.location.href = '/';
+        }
+
+        function setupEventListeners() {
+            document.getElementById('logout-btn').addEventListener('click', logout);
+            
+            // Setup sortable columns
+            document.querySelectorAll('.asset-table th[data-sort]').forEach(th => {
+                th.addEventListener('click', () => sortTable(th.dataset.sort));
+            });
+        }
+
+        function loadDashboard() {
+            fetch(`${API_BASE}/api/dashboard/watchlist-summary`, {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                
+                if (!data.success) {
+                    showError(data.error || 'Failed to load dashboard');
+                    return;
+                }
+                
+                displayDashboard(data);
+            })
+            .catch(error => {
+                hideLoading();
+                showError('Failed to load dashboard: ' + error.message);
+            });
+        }
+
+        function displayDashboard(data) {
+            document.getElementById('dashboard-content').style.display = 'block';
+            
+            // Update watchlist info
+            if (data.watchlist_info) {
+                document.getElementById('watchlist-name').textContent = `- ${data.watchlist_info.name}`;
+            }
+            
+            // Update timestamp
+            if (data.generated_at) {
+                const date = new Date(data.generated_at);
+                document.getElementById('last-updated').textContent = 
+                    `Last updated: ${date.toLocaleTimeString()}`;
+            }
+            
+            // Update watchlist index
+            updateWatchlistIndex(data.watchlist_index);
+            
+            // Store and display assets
+            assetsData = data.assets || [];
+            displayAssets(assetsData);
+            
+            // Update stats
+            updateStats(assetsData);
+            
+            // Show empty state if no assets
+            if (assetsData.length === 0) {
+                document.getElementById('empty-state').style.display = 'block';
+                document.getElementById('asset-table').parentElement.style.display = 'none';
+                document.getElementById('empty-message').textContent = data.message || 'Add assets to your watchlist.';
+            }
+        }
+
+        function updateWatchlistIndex(index) {
+            const indexEl = document.getElementById('index-value');
+            const gaugeEl = document.getElementById('gauge-fill');
+            
+            if (index === null || index === undefined) {
+                indexEl.textContent = 'N/A';
+                return;
+            }
+            
+            indexEl.textContent = index.toFixed(1);
+            
+            // Update gauge (assuming 0-200 range with 100 as center)
+            const normalizedValue = Math.min(Math.max(index, 0), 200);
+            const percentage = normalizedValue / 200;
+            const circumference = 314; // 2 * PI * 50
+            const offset = circumference * (1 - percentage);
+            gaugeEl.style.strokeDashoffset = offset;
+        }
+
+        function updateStats(assets) {
+            document.getElementById('total-assets').textContent = assets.length;
+            
+            const gainers = assets.filter(a => a.change_1d > 0).length;
+            const losers = assets.filter(a => a.change_1d < 0).length;
+            
+            document.getElementById('gainers-count').textContent = gainers;
+            document.getElementById('losers-count').textContent = losers;
+        }
+
+        function displayAssets(assets) {
+            const tbody = document.getElementById('asset-tbody');
+            tbody.innerHTML = '';
+            
+            // Sort assets
+            const sorted = [...assets].sort((a, b) => {
+                let aVal = a[currentSort.column];
+                let bVal = b[currentSort.column];
+                
+                // Handle null values
+                if (aVal === null) aVal = currentSort.direction === 'asc' ? Infinity : -Infinity;
+                if (bVal === null) bVal = currentSort.direction === 'asc' ? Infinity : -Infinity;
+                
+                // String comparison for symbol/name
+                if (typeof aVal === 'string') {
+                    return currentSort.direction === 'asc' 
+                        ? aVal.localeCompare(bVal) 
+                        : bVal.localeCompare(aVal);
+                }
+                
+                // Numeric comparison
+                return currentSort.direction === 'asc' ? aVal - bVal : bVal - aVal;
+            });
+            
+            sorted.forEach(asset => {
+                const tr = document.createElement('tr');
+                tr.onclick = () => window.location.href = `/asset/${asset.symbol}`;
+                
+                tr.innerHTML = `
+                    <td>
+                        <div class="asset-info">
+                            <span class="asset-symbol">${asset.symbol}</span>
+                            <span class="asset-name">${asset.name}</span>
+                        </div>
+                    </td>
+                    <td class="price">$${asset.last_price !== null ? asset.last_price.toFixed(2) : 'N/A'}</td>
+                    <td>${formatChange(asset.change_1d)}</td>
+                    <td>${formatChange(asset.change_1w)}</td>
+                    <td>${formatChange(asset.change_1m)}</td>
+                    <td>${formatChange(asset.change_1y)}</td>
+                    <td>${createSparkline(asset.sparkline, asset.change_1m)}</td>
+                `;
+                
+                tbody.appendChild(tr);
+            });
+            
+            // Update sort indicators
+            document.querySelectorAll('.asset-table th').forEach(th => {
+                th.classList.remove('sorted-asc', 'sorted-desc');
+                if (th.dataset.sort === currentSort.column) {
+                    th.classList.add(currentSort.direction === 'asc' ? 'sorted-asc' : 'sorted-desc');
+                }
+            });
+        }
+
+        function formatChange(value) {
+            if (value === null || value === undefined) {
+                return '<span class="change neutral">N/A</span>';
+            }
+            
+            const className = value > 0 ? 'positive' : value < 0 ? 'negative' : 'neutral';
+            const sign = value > 0 ? '+' : '';
+            
+            return `<span class="change ${className}">${sign}${value.toFixed(2)}%</span>`;
+        }
+
+        function createSparkline(data, changeValue) {
+            if (!data || data.length < 2) {
+                return '<div class="sparkline-container"></div>';
+            }
+            
+            const width = 100;
+            const height = 30;
+            const padding = 2;
+            
+            const min = Math.min(...data);
+            const max = Math.max(...data);
+            const range = max - min || 1;
+            
+            const points = data.map((val, i) => {
+                const x = padding + (i / (data.length - 1)) * (width - 2 * padding);
+                const y = height - padding - ((val - min) / range) * (height - 2 * padding);
+                return `${x},${y}`;
+            }).join(' ');
+            
+            const colorClass = changeValue > 0 ? 'positive' : changeValue < 0 ? 'negative' : 'neutral';
+            
+            return `
+                <div class="sparkline-container">
+                    <svg class="sparkline" viewBox="0 0 ${width} ${height}">
+                        <polyline class="sparkline-line ${colorClass}" points="${points}"/>
+                    </svg>
+                </div>
+            `;
+        }
+
+        function sortTable(column) {
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.direction = 'asc';
+            }
+            
+            displayAssets(assetsData);
+        }
+
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function showError(message) {
+            const errorEl = document.getElementById('error-message');
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

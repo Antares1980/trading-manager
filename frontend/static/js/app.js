@@ -114,6 +114,8 @@ function handleLogin(e) {
             localStorage.setItem('authToken', authToken);
             showUserInfo(data.user);
             hideLoginModal();
+            // Redirect to dashboard after successful login
+            window.location.href = '/dashboard';
         } else {
             showError(data.error || 'Login failed');
         }
