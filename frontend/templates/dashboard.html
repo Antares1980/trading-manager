@@ -868,7 +868,7 @@
                             <span class="search-result-name">${escapeHtml(asset.name)}</span>
                         </div>
                         <button class="btn-add" 
-                                onclick="addAssetToWatchlist('${asset.id}', '${escapeHtml(asset.symbol)}')"
+                                onclick="addAssetToWatchlist('${asset.id}', '${asset.symbol.replace(/'/g, "\\'")}')"
                                 ${isInWatchlist ? 'disabled' : ''}>
                             ${isInWatchlist ? 'Added' : 'Add'}
                         </button>
@@ -1118,7 +1118,7 @@
                     <td onclick="window.location.href='/asset/${escapeHtml(asset.symbol)}'">${formatChange(asset.change_1y)}</td>
                     <td onclick="window.location.href='/asset/${escapeHtml(asset.symbol)}'">${createSparkline(asset.sparkline, asset.change_1m)}</td>
                     <td class="actions-col">
-                        <button class="btn-remove" onclick="event.stopPropagation(); promptRemoveAsset('${asset.watchlist_item_id}', '${escapeHtml(asset.symbol)}')">
+                        <button class="btn-remove" onclick="event.stopPropagation(); promptRemoveAsset('${asset.watchlist_item_id}', '${asset.symbol.replace(/'/g, "\\'")}')">
                             Remove
                         </button>
                     </td>

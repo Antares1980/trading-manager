@@ -7,6 +7,7 @@ Provides operations for managing assets (stocks, ETFs, crypto, etc.).
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required
 import logging
+import json
 
 from backend.db import session_scope
 from backend.models import Asset
@@ -147,7 +148,7 @@ def create_asset():
                 description=data.get('description'),
                 sector=data.get('sector'),
                 industry=data.get('industry'),
-                asset_metadata=data.get('metadata', '{}')
+                asset_metadata=json.dumps(data.get('metadata', {})) if data.get('metadata') else '{}'
             )
             
             session.add(asset)
@@ -204,7 +205,7 @@ def update_asset(asset_id):
             if 'is_active' in data:
                 asset.is_active = data['is_active']
             if 'metadata' in data:
-                asset.asset_metadata = data['metadata']
+                asset.asset_metadata = json.dumps(data['metadata']) if data['metadata'] else '{}'
             
             session.commit()
             
